@@ -55,7 +55,7 @@ The distribution tree contains:
         
 * ns3_sim/ (event-driven simulation of the realistic incident-supporting hierarchical cloud deployment)    
     
-    - src/     (c++ source files of the AGRA protocol implemented within GPSR protocol in NS-3, see - A. Fonseca, A. Camoes, T. Vazao, “Geographical routing implementation in NS3”, Proc. of ACM ICST, 2012.)
+    - src/     (c++ source files for the AGRA protocol implemented as part of the GPSR protocol in NS-3, see - A. Fonseca, A. Camoes, T. Vazao, “Geographical routing implementation in NS3”, Proc. of ACM ICST, 2012.)
     
     - scratch/ (c++ source files of the node high failures and mobility scenarios)
     

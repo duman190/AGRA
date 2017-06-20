@@ -41,9 +41,11 @@ The distribution tree contains:
     
 * java_sim/ (numerical simulation in presence of obstacles with complex concave shapes)	
 
-    - build.xml (build file for ant)
+    - build.xml (build file for ant)    
     
     - lib/      (java library dependencies)
+    
+    - result/   (empty folder to store some of the simulation results of experiment #2 in a form of txt files)
     
     - src/      (java source files)
         

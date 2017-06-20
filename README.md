@@ -23,7 +23,8 @@ How does AGRA work?
 ==================
 Once a geographical knowledge of the potential static physical obstacles is extracted and propagated from the gateway, our proposed stateless greedy forwarding algorithm viz. "Attractive/Repulsive Greedy Forwarding" uses this geo-knowledge in addition to geo-coordinates of the nodes in order to proactively avoid local minimum situtations as shown in the figure below:
 
-![Figure](/img/agra_example.jpg "Attractive Repulsive Greedy Forwarding example: ARGF starts in Attraction mode until it reaches the repulsion zone; at node b located outside the repulsion zone, ARGF returns back to its Attraction mode. ARGF can again switch to the Repulsion mode with guaranteed progress towards destination. At node d, ARGF returns to the Attraction mode and continue forwarding in this mode to destination.")
+![Figure](/img/agra_example.jpg)
+Figure: Attractive Repulsive Greedy Forwarding (ARGF) example: ARGF starts in Attraction mode until it reaches the repulsion zone; at node b (located outside the repulsion zone), ARGF returns back to its Attraction mode. ARGF can again switch to the Repulsion mode with guaranteed progress towards destination. At node d, ARGF returns to the Attraction mode and continue forwarding in this mode to destination.
 
 What is inside?
 ================
@@ -83,7 +84,7 @@ http://java.sun.com/j2se/
 http://www.nsnam.org/
 
 ## Java simulations
-* navigate to java_sim folder
+* navigate to *java_sim* folder
 
 * clean
 
@@ -115,6 +116,8 @@ http://www.nsnam.org/
     - optionally specify three more integer arguments: first X is to specify the number of trials (default is 50); second Y is to specify the number of source-destination pairs (default is 1000); and third Z is to specify the packet's TTL policy (default is 128) for the experiment number 5 only!
     
 ## NS-3 simulations
+* navigate to *ns-3_sim* folder
+
 * copy everything to your NS-3 directory
     
 * refer to NS-3 manual (see https://www.nsnam.org/docs/release/3.26/tutorial/html/getting-started.html#running-a-script) to run any of the following two simulations:

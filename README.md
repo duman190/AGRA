@@ -19,6 +19,12 @@ License
 This project is licensed under the GNU General Public License - see the [LICENSE.md](LICENSE.md) file for details
 
 
+How does AGRA work?
+==================
+Once a geographical knowledge of the potential static physical obstacles is extracted and propagated from the gateway, our proposed stateless greedy forwarding algorithm viz. "Attractive/Repulsive Greedy Forwarding" uses this geo-knowledge in addition to geo-coordinates of the nodes in order to proactively avoid local minimum situtations as shown in the figure below:
+
+![Alt text](/image/agra_example.jpg?raw=true "Attractive Repulsive Greedy Forwarding example: ARGF starts in Attraction mode until it reaches the repulsion zone; at node b located outside the repulsion zone, ARGF returns back to its Attraction mode. ARGF can again switch to the Repulsion mode with guaranteed progress towards destination. At node d, ARGF returns to the Attraction mode and continue forwarding in this mode to destination.")
+
 What is inside?
 ================
 The source code for the Elsevier FGCS submission (SI on Information and Resource Management Systems for Internet of Things: Energy Management, Communication Protocols and Future Applications).
@@ -38,6 +44,8 @@ The distribution tree contains:
 * LICENSE
 
 	- GNU license file
+
+* img/ (folder with images used in README)
     
 * java_sim/ (numerical simulation in presence of obstacles with complex concave shapes)	
 
@@ -75,6 +83,8 @@ http://java.sun.com/j2se/
 http://www.nsnam.org/
 
 ## Java simulations
+* navigate to java_sim folder
+
 * clean
 
     ```

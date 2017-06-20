@@ -25,14 +25,13 @@ AGRA first obtains a geographical knowledge of the physical obstacles (e.g., ext
 
 ![Figure](/img/general.png)
 
-**Figure 1**: Incident-Supporting Hierarchical Cloud setup: AGRA first extracts geographical knowledge of physical obstacles form the pre-uploaded at the edge cloud satellite imagery and then propagates this information from the gateway during during disaster-incident response activities within a lost infrastructure
-region to enhance geographical routing.
+**Figure 1**: *Incident-Supporting Hierarchical Cloud setup: AGRA first extracts geographical knowledge of physical obstacles form the pre-uploaded at the edge cloud satellite imagery and then propagates this information from the gateway during during disaster-incident response activities within a lost infrastructure region to enhance geographical routing.*
 
 Our proposed stateless greedy forwarding algorithm viz. "Attractive/Repulsive Greedy Forwarding" is then uses this geo-knowledge in addition to geo-coordinates of the nodes in order to proactively avoid local minimum situtations as shown in the figure below:
 
 ![Figure](/img/agra_example.jpg)
 
-**Figure 2**: Attractive/Repulsive Greedy Forwarding (ARGF) example: ARGF starts in Attraction mode until it reaches the repulsion zone; at node b (located outside the repulsion zone), ARGF returns back to its Attraction mode. ARGF can again switch to the Repulsion mode with guaranteed progress towards destination. At node d, ARGF returns to the Attraction mode and continue forwarding in this mode to destination.
+**Figure 2**: *Attractive/Repulsive Greedy Forwarding (ARGF) example: ARGF starts in Attraction mode until it reaches the repulsion zone; at node b (located outside the repulsion zone), ARGF returns back to its Attraction mode. ARGF can again switch to the Repulsion mode with guaranteed progress towards destination. At node d, ARGF returns to the Attraction mode and continue forwarding in this mode to destination.*
 
 What is inside?
 ================

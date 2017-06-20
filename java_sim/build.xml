@@ -1,0 +1,113 @@
+<?xml version="1.0" encoding="UTF-8" standalone="no"?>
+
+ <!--
+/****************************************************************************/
+/* This file is part of AGRA project.                                       */
+/*                                                                          */
+/* AGRA is free software: you can redistribute it and/or modify             */
+/* it under the terms of the GNU General Public License as published by     */
+/* the Free Software Foundation, either version 3 of the License, or        */
+/* (at your option) any later version.                                      */
+/*                                                                          */
+/* AGRA is distributed in the hope that it will be useful,                  */
+/* but WITHOUT ANY WARRANTY; without even the implied warranty of           */
+/* MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the            */
+/* GNU General Public License for more details.                             */
+/*                                                                          */
+/* You should have received a copy of the GNU General Public License        */
+/* along with AGRA.  If not, see <http://www.gnu.org/licenses/>.            */
+/*                                                                          */
+/****************************************************************************/
+/*                                                                          */
+/*  Author:    Dmitrii Chemodanov, University of Missouri-Columbia          */
+/*  Title:     AGRA: AI-augmented Geographic Routing Approach for IoT-based */
+/*             Incident-Supporting Applications                             */
+/*  Revision:  1.0         6/19/2017                                        */
+/****************************************************************************/
+-->
+
+<project default="dist" name="agra">
+    <property name="target" location="target"/>
+    <property name="build" location="${target}/bin"/>    
+    <property name="source" location="src/"/>    
+    <property name="docs" location="${target}/docs"/>
+    <property name="main-class" value="edu.um.chemodanov.agra.Main"/>
+    <property name="agra-jar" location="${target}/agra.jar"/>    
+    <property name="ant.build.javac.source" value="1.7"/>
+    <property name="ant.build.javac.target" value="1.7"/>
+    <property name="lib" location="lib"/>
+
+    <patternset id="lib">
+        <include name="commons-lang3-3.3.2.jar"/>
+        <include name="jetty-webapp-7.3.0.v20110203.jar"/>
+        <include name="log4j-1.2.14.jar"/>
+        <include name="servlet-api-3.0.pre4.jar"/>
+        <include name="slf4j-api-1.6.1.jar"/>
+        <include name="slf4j-log4j12-1.6.1.jar"/>
+        <include name="spark-0.9.9.4-SNAPSHOT.jar"/>
+    </patternset>
+
+    <path id="classpath">
+        <fileset dir="${lib}">
+            <patternset refid="lib"/>
+        </fileset>
+    </path>
+
+    <target name="init">
+        <mkdir dir="${build}"/>        
+        <mkdir dir="${target}/lib"/>
+    </target>
+
+    <target name="compile" depends="init">
+        <javac includeAntRuntime="false" 
+           classpathref="classpath" 
+           debug="true" 
+           srcdir="${source}"
+           destdir="${build}">
+        </javac>
+    </target>
+
+    <target name="clean">
+        <delete dir="${target}"/>
+    </target>
+
+    <target name="run" depends="dist">
+        <java fork="true" jar="${agra-jar}" classpathref="classpath">
+            <jvmarg value="-server"/>
+            <jvmarg value="-Xms1024M"/>
+            <jvmarg value="-Xmx1024M"/>
+        </java>
+    </target>
+
+   <target name="dist" depends="compile">
+        <jar destfile="${agra-jar}" filesetmanifest="mergewithoutmain">
+            <manifest>
+                <attribute name="Main-Class" value="${main-class}"/>
+                <attribute name="Class-Path" value="."/>
+            </manifest>
+            <fileset dir="${build}"/>
+            <zipgroupfileset dir="${lib}" excludes="META-INF/*.SF">
+                <patternset refid="lib"/>
+            </zipgroupfileset>
+        </jar>
+    </target>
+
+    <target name="javadoc">
+        <javadoc access="protected"
+            author="true"
+            classpathref="classpath"
+            destdir="${docs}"
+            doctitle="AGRA"
+            nodeprecated="false"
+            nodeprecatedlist="false"
+            noindex="false"
+            nonavbar="false"
+            notree="false"
+            source="1.7"
+            sourcepath="${source}"
+            splitindex="true"
+            use="true"
+            version="true"/>
+    </target>
+
+</project>

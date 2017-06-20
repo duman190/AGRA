@@ -27,7 +27,7 @@ AGRA first obtains a geographical knowledge of the physical obstacles (e.g., ext
 
 **Figure 1**: *Incident-Supporting Hierarchical Cloud setup: AGRA first extracts geographical knowledge of physical obstacles form the pre-uploaded at the edge cloud satellite imagery and then propagates this information from the gateway during disaster-incident response activities within a lost infrastructure region to enhance geographical routing.*
 
-Our proposed stateless greedy forwarding algorithm viz. "Attractive/Repulsive Greedy Forwarding" then uses this geo-knowledge in addition to geo-coordinates of the nodes in order to proactively avoid local minimum situtations as shown in the figure below:
+Our proposed stateless greedy forwarding algorithm viz. "Attractive/Repulsive Greedy Forwarding" that emulates electrostatic repulsive forces and achieves the worst case a **3.291** path stretch approximation bound with respect to the shortest path, then uses this geo-knowledge in addition to geo-coordinates of the nodes in order to proactively avoid local minimum situtations as shown in the figure below:
 
 ![Figure](/img/agra_example.jpg)
 

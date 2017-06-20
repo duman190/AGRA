@@ -23,7 +23,7 @@ How does AGRA work?
 ==================
 Once a geographical knowledge of the potential static physical obstacles is extracted and propagated from the gateway, our proposed stateless greedy forwarding algorithm viz. "Attractive/Repulsive Greedy Forwarding" uses this geo-knowledge in addition to geo-coordinates of the nodes in order to proactively avoid local minimum situtations as shown in the figure below:
 
-![Attractive Repulsive Greedy Forwarding (ARGF) example: ARGF starts in Attraction mode until it reaches the repulsion zone; at node b (located outside the repulsion zone), ARGF returns back to its Attraction mode. ARGF can again switch to the Repulsion mode with guaranteed progress towards destination. At node d, ARGF returns to the Attraction mode and continue forwarding in this mode to destination.](/img/agra_example.jpg?raw=true)
+![Figure](/img/agra_example.jpg?raw=true "Attractive Repulsive Greedy Forwarding example: ARGF starts in Attraction mode until it reaches the repulsion zone; at node b located outside the repulsion zone, ARGF returns back to its Attraction mode. ARGF can again switch to the Repulsion mode with guaranteed progress towards destination. At node d, ARGF returns to the Attraction mode and continue forwarding in this mode to destination.")
 
 What is inside?
 ================

@@ -1,7 +1,7 @@
 AGRA: AI-augmented Geographic Routing Approach  
 for IoT-based Incident-Supporting Applications  
 =================
-In this project, we develop a novel Artificial Intelligent (AI)-augmented geographic routing approach, that relies on an area knowledge (e.g., obtained from the satellite imagery available at the edge cloud). In particular, we devise a new stateless greedy forwarding algorithm that uses such a geographical knowledge (i.e., in addition to geo-coordinates) to proactively avoid the local minimum problem by diverting traffic with an algorithm that emulates electrostatic repulsive forces. In our theoretical analysis, we show that our Greedy Forwarding achieves in the worst case a 3.291 path stretch approximation bound with respect to the shortest path, without assuming presence of symmetrical links or unit disk graphs.
+In this project, we develop a novel Artificial Intelligent (AI)-augmented geographic routing approach, that relies on an area knowledge (e.g., obtained from the satellite imagery available at the edge cloud). In particular, we devise a new stateless greedy forwarding algorithm that uses such a geographic knowledge (i.e., in addition to geo-coordinates) to proactively avoid the local minimum problem by diverting traffic with an algorithm that emulates electrostatic repulsive forces. In our theoretical analysis, we show that our Greedy Forwarding achieves in the worst case a 3.291 path stretch approximation bound with respect to the shortest path, without assuming presence of symmetrical links or unit disk graphs.
 Proposed algorithm is evaluted with both numerical (java) and event-driven (ns-3) simulations, and we establish the practicality of our approach in a real incident-supporting hierarchical cloud deployment to demonstrate improvement of application level throughput due to a reduced path stretch under severe node failures and high mobility challenges of disaster response scenarios.
 
 Authors
@@ -9,7 +9,7 @@ Authors
 2017 VIMAN laboratory, Computer Science Department, University of Missouri-Columbia.
 
 ```
-Updated June 19, 2017 by Dmitrii Chemodanov
+Updated June 22, 2017 by Dmitrii Chemodanov
 ```
 
 All feedback appreciated to dycbt4@mail.missouri.edu 
@@ -25,7 +25,7 @@ AGRA first obtains a geographical knowledge of the physical obstacles (e.g., ext
 
 ![Figure](/img/general.png)
 
-**Figure 1**: *Incident-Supporting Hierarchical Cloud setup: AGRA first extracts geographical knowledge of physical obstacles form the pre-uploaded at the edge cloud satellite imagery and then propagates this information from the gateway during disaster-incident response activities within a lost infrastructure region to enhance geographical routing.*
+**Figure 1**: *Incident-Supporting Hierarchical Cloud setup: AGRA first extracts geographical knowledge of physical obstacles from the pre-uploaded at the edge cloud satellite imagery and then propagates this information from the gateway during disaster-incident response activities within a lost infrastructure region to enhance geographic routing.*
 
 Our proposed stateless greedy forwarding algorithm viz. "Attractive/Repulsive Greedy Forwarding" that emulates electrostatic repulsive forces and achieves the worst case a **3.291** path stretch approximation bound with respect to the shortest path, then uses this geo-knowledge in addition to geo-coordinates of the nodes in order to proactively avoid local minimum situtations as shown in the figure below:
 
@@ -83,7 +83,7 @@ The distribution tree contains:
         agra_mobility_expr.cc (main file for the high node mobility simulation; the Joplin MO hospital scene is used)
         ```
 
-COMPILATION AND RUN
+Compilation and run
 ============
 Compiling and run of this software requires Ant, Java 1.7 and NS-3 (v.3.25 or higher) installed. These can be downloaded respectively from:  
 http://jakarta.apache.org/ant/index.html 

@@ -211,16 +211,15 @@ Ipv4Address PositionTable::BestNeighbor(Vector position, Vector nodePos) {
  * \param nodePos the position of the node that has the packet
  * \return Ipv4Address of the next hop, Ipv4Address::GetZero () if no nighbour was found in Repulsion mode
  */
-Ipv4Address PositionTable::ElectrostaticBestNeighbor(Vector position, Vector nodePos,
+Ipv4Address PositionTable::ElectrostaticBestNeighbor(Vector position, Vector nodePos, 
 		double locationX, double locationY, double radius) {
 	Purge();
-        printf("X = %f,Y= %f, r=%f",locationX, locationY, radius);
 	//FIXME allow parametrization of this parameters
 	double q = 1;
 	double n = 2;
 	//FIXME add hole detection mechanism
 	Vector holeC(locationX,locationY,0);//(300,450,0);//(375, 325, 0); // be aware these values are hardcoded for particular experiment
-	double holeR = std::sqrt(2)*radius; //200;//388.909; // be aware these values are hardcoded for particular experiment
+	double holeR = std::sqrt(2)*200;//388.909; // be aware these values are hardcoded for particular experiment
 
 	//calculate hole charge ql
 	double b = CalculateDistance(holeC, position);

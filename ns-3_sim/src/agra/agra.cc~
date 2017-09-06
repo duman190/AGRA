@@ -126,16 +126,7 @@ TypeId RoutingProtocol::GetTypeId(void) {
 					"Indicates wheteher EGF avoidance is used or not",
 					UintegerValue(0),
 					MakeUintegerAccessor(&RoutingProtocol::RepulsionMode),
-					MakeUintegerChecker<uint8_t>()).AddAttribute("locationX",
-                                        "location obstacle on X axis",DoubleValue(0),
-                                        MakeDoubleAccessor(&RoutingProtocol::locationX),
-					MakeDoubleChecker<double>()).AddAttribute("locationY",
-                                        "location obstacle on Y axis",DoubleValue(0),
-                                        MakeDoubleAccessor(&RoutingProtocol::locationY),
-					MakeDoubleChecker<double>()).AddAtribute("object_radius",
-                                        "radius of obstacle in scenario",DoubleValue(0),
-                                        MakeDoubleAccessor(&RoutingProtocol::object_radius),
-					MakeDoubleChecker<double>());
+					MakeUintegerChecker<uint8_t>());
 	/*.AddAttribute("RepulsionMode",
 	 "Indicates wheteher EGF avoidance is used or not",
 	 UintegerValue(1),
@@ -452,7 +443,7 @@ bool RoutingProtocol::Forwarding(Ptr<const Packet> packet,
 		//std::cout << "We start at Repulsion Mode!" << "[node "
 		//		<< m_ipv4->GetObject<Node>()->GetId() << "] ttl="
 		//		<< (uint32_t) header.GetTtl() << " dstPos=" << Position << std::endl;
-		nextHop = m_neighbors.ElectrostaticBestNeighbor(Position, myPos, locationX, locationY, object_radius);
+		nextHop = m_neighbors.ElectrostaticBestNeighbor(Position, myPos);
                 if (nextHop == Ipv4Address::GetZero()) {
                 //std::cout << "We switch to Greedy Forwarding!" << "[node "
 		//		<< m_ipv4->GetObject<Node>()->GetId() << "] ttl="
@@ -1010,7 +1001,7 @@ Ptr<Ipv4Route> RoutingProtocol::RouteOutput(Ptr<Packet> p,
 		std::cout << "We start at Repulsion Mode!" << "[node "
 				<< m_ipv4->GetObject<Node>()->GetId() << "] ttl="
 				<< (uint32_t) header.GetTtl() << std::endl;
-		nextHop = m_neighbors.ElectrostaticBestNeighbor(dstPos, myPos,locationX,locationY,object_radius);
+		nextHop = m_neighbors.ElectrostaticBestNeighbor(dstPos, myPos);
 	} else {
 		//std::cout << "We start at Greedy Forwarding!" << "[node "
 		//		<< m_ipv4->GetObject<Node>()->GetId() << "] ttl="

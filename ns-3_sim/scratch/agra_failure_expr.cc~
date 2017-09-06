@@ -1,18 +1,28 @@
 /* -*- Mode:C++; c-file-style:"gnu"; indent-tabs-mode:nil; -*- */
-/*
- * This program is free software; you can redistribute it and/or modify
- * it under the terms of the GNU General Public License version 2 as
- * published by the Free Software Foundation;
- *
- * This program is distributed in the hope that it will be useful,
- * but WITHOUT ANY WARRANTY; without even the implied warranty of
- * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
- * GNU General Public License for more details.
- *
- * You should have received a copy of the GNU General Public License
- * along with this program; if not, write to the Free Software
- * Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
- */
+/****************************************************************************/
+/* This file is part of AGRA project.                                       */
+/*                                                                          */
+/* AGRA is free software: you can redistribute it and/or modify             */
+/* it under the terms of the GNU General Public License as published by     */
+/* the Free Software Foundation, either version 3 of the License, or        */
+/* (at your option) any later version.                                      */
+/*                                                                          */
+/* AGRA is distributed in the hope that it will be useful,                  */
+/* but WITHOUT ANY WARRANTY; without even the implied warranty of           */
+/* MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the            */
+/* GNU General Public License for more details.                             */
+/*                                                                          */
+/* You should have received a copy of the GNU General Public License        */
+/* along with AGRA.  If not, see <http://www.gnu.org/licenses/>.            */
+/*                                                                          */
+/****************************************************************************/
+/*                                                                          */
+/*  Author:    Dmitrii Chemodanov, University of Missouri-Columbia          */
+/*  Title:     AGRA: AI-augmented Geographic Routing Approach for IoT-based */
+/*             Incident-Supporting Applications                             */
+/*  Revision:  1.0         6/19/2017                                        */
+/****************************************************************************/
+
 
 #include "ns3/core-module.h"
 #include "ns3/network-module.h"
@@ -23,7 +33,7 @@
 #include "ns3/olsr-module.h"
 #include "ns3/flow-monitor-module.h"
 #include "ns3/mobility-module.h"
-#include "ns3/gpsr-module.h"
+#include "ns3/agra-module.h"
 #include "ns3/aodv-module.h"
 #include "ns3/random-variable-stream.h"
 #include <fstream>
@@ -209,7 +219,10 @@ int main (int argc, char *argv[])
   //ErpOfdmRate54Mbps
   //DsssRate11Mbps
   std::string phyMode ("ErpOfdmRate54Mbps");
-  uint16_t RepulsionMode = (uint16_t) 0;
+  uint16_t RepulsionMode = (uint16_t) 1;
+  //Init the location and radius of obstacle
+  double locationX=300,locationY=450;
+  double object_radius=200;
   Time FailureTime = Seconds(30.0);
   double FailureProb = 0.0;
   Time StopTime = Seconds(780.0);
@@ -297,8 +310,11 @@ int main (int argc, char *argv[])
 
 
   //setup routing protocol
-  GpsrHelper gpsr;
-  gpsr.Set("RepulsionMode",UintegerValue(RepulsionMode));
+  AgraHelper agra;
+  agra.Set("RepulsionMode",UintegerValue(RepulsionMode));
+  agra.Set("locationX",DoubleValue(locationX));
+  agra.Set("locationY",DoubleValue(locationY));
+  agra.Set("object_radius",DoubleValue(object_radius));
 
   // Enable OLSR
   OlsrHelper olsr;
@@ -323,7 +339,7 @@ int main (int argc, char *argv[])
 */
 
   InternetStackHelper internet;
-  internet.SetRoutingHelper (gpsr);
+  internet.SetRoutingHelper (agra);
   //internet.SetRoutingHelper (list);
   //internet.SetRoutingHelper (aodv); // has effect on the next Install ()
   internet.Install (c);
@@ -412,8 +428,8 @@ int main (int argc, char *argv[])
   srcModel->AddWaypoint(location22);
   srcModel->AddWaypoint(location3);
 
-  //istall gpsr headers to all nodes
-  gpsr.Install ();
+  //istall agra headers to all nodes
+  agra.Install ();
 
   //setup applications
   NS_LOG_INFO ("Create Applications.");

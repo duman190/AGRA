@@ -120,7 +120,7 @@ public:
    * \param nodePos the position of the node that has the packet
    * \return Ipv4Address of the next hop, Ipv4Address::GetZero () if no nighbour was found in Repulsion mode
    */
-  Ipv4Address ElectrostaticBestNeighbor (Vector position, Vector nodePos);
+  Ipv4Address ElectrostaticBestNeighbor (Vector position, Vector nodePos, double locationX, double locationY, double radius);
 
   bool IsInSearch (Ipv4Address id);
 
@@ -151,9 +151,6 @@ private:
   Callback<void, WifiMacHeader const &> m_txErrorCallback;
   // Process layer 2 TX error notification
   void ProcessTxError (WifiMacHeader const&);
-
-
-
 
 };
 

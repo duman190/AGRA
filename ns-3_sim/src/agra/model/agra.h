@@ -150,6 +150,8 @@ private:
   bool PerimeterMode;
   //set 1 to use avoidance with EGF
   uint8_t RepulsionMode;
+  //set location and radius of obstacle
+  double locationX,locationY,object_radius;
   std::list<Ipv4Address> m_queuedAddresses;
   Ptr<LocationService> m_locationService;
 

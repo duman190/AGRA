@@ -14,31 +14,6 @@
  * Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
  */
 
-/****************************************************************************/
-/* This file is part of AGRA project.                                       */
-/*                                                                          */
-/* AGRA is free software: you can redistribute it and/or modify             */
-/* it under the terms of the GNU General Public License as published by     */
-/* the Free Software Foundation, either version 3 of the License, or        */
-/* (at your option) any later version.                                      */
-/*                                                                          */
-/* AGRA is distributed in the hope that it will be useful,                  */
-/* but WITHOUT ANY WARRANTY; without even the implied warranty of           */
-/* MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the            */
-/* GNU General Public License for more details.                             */
-/*                                                                          */
-/* You should have received a copy of the GNU General Public License        */
-/* along with AGRA.  If not, see <http://www.gnu.org/licenses/>.            */
-/*                                                                          */
-/****************************************************************************/
-/*                                                                          */
-/*  Author:    Dmitrii Chemodanov, Huy Trinh                                */
-/*                                 University of Missouri-Columbia          */
-/*  Title:     AGRA: AI-augmented Geographic Routing Approach for IoT-based */
-/*             Incident-Supporting Applications                             */
-/*  Revision:  1.0         6/19/2017                                        */
-/****************************************************************************/
-
 #include "ns3/core-module.h"
 #include "ns3/network-module.h"
 #include "ns3/internet-module.h"
@@ -50,7 +25,7 @@
 #include "ns3/flow-monitor-module.h"
 #include "ns3/device-energy-model.h"
 #include "ns3/mobility-module.h"
-#include "ns3/argr-module.h"
+#include "ns3/agra-module.h"
 #include "ns3/aodv-module.h"
 #include "ns3/mesh-helper.h"
 #include "ns3/v4ping-helper.h"
@@ -238,6 +213,9 @@ int main (int argc, char *argv[])
   //DsssRate11Mbps
   std::string phyMode ("ErpOfdmRate54Mbps");
   uint16_t RepulsionMode = (uint16_t) 1;
+  //Init the location and radius of obstacle
+  double locationX=300,locationY=450;
+  double object_radius=200;
   Time FailureTime = Seconds(30.0);
   double FailureProb = 0.0;
   Time StopTime = Seconds(720.0);
@@ -336,12 +314,15 @@ int main (int argc, char *argv[])
   //============================================
 
   // setup routing protocol section ==========================================
-  ArgrHelper argr;
-  argr.Set("RepulsionMode",UintegerValue(RepulsionMode));
+  AgraHelper agra;
+  agra.Set("RepulsionMode",UintegerValue(RepulsionMode));
+  agra.Set("locationX",UintegerValue(locationX));
+  agra.Set("locationY",UintegerValue(locationY));
+  agra.Set("object_radius",UintegerValue(object_radius));
   AodvHelper aodv;
   InternetStackHelper internet;
-  //internet.SetRoutingHelper (argr); //uncomment to use argr or egf
-  internet.SetRoutingHelper (aodv); //uncomment to use aodv
+  internet.SetRoutingHelper (agra); //uncomment to use agra or egf
+  //internet.SetRoutingHelper (aodv); //uncomment to use aodv
   internet.Install (c);
   //============================================
 
@@ -468,8 +449,8 @@ int main (int argc, char *argv[])
   srcModel->AddWaypoint(location22);
   srcModel->AddWaypoint(location3);
 
-  //istall argr headers to all nodes
-  //argr.Install ();
+  //istall agra headers to all nodes
+  //agra.Install ();
 
   //setup applications
   NS_LOG_INFO ("Create Applications.");

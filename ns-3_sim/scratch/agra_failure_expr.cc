@@ -33,7 +33,7 @@
 #include "ns3/olsr-module.h"
 #include "ns3/flow-monitor-module.h"
 #include "ns3/mobility-module.h"
-#include "ns3/gpsr-module.h"
+#include "ns3/agra-module.h"
 #include "ns3/aodv-module.h"
 #include "ns3/random-variable-stream.h"
 #include <fstream>
@@ -219,7 +219,10 @@ int main (int argc, char *argv[])
   //ErpOfdmRate54Mbps
   //DsssRate11Mbps
   std::string phyMode ("ErpOfdmRate54Mbps");
-  uint16_t RepulsionMode = (uint16_t) 0;
+  uint16_t RepulsionMode = (uint16_t) 1;
+  //Init the location and radius of obstacle
+  double locationX=375,locationY=325;
+  double object_radius=388.909;
   Time FailureTime = Seconds(30.0);
   double FailureProb = 0.0;
   Time StopTime = Seconds(780.0);
@@ -307,8 +310,11 @@ int main (int argc, char *argv[])
 
 
   //setup routing protocol
-  GpsrHelper gpsr;
-  gpsr.Set("RepulsionMode",UintegerValue(RepulsionMode));
+  AgraHelper agra;
+  agra.Set("RepulsionMode",UintegerValue(RepulsionMode));
+  agra.Set("locationX",DoubleValue(locationX));
+  agra.Set("locationY",DoubleValue(locationY));
+  agra.Set("object_radius",DoubleValue(object_radius));
 
   // Enable OLSR
   OlsrHelper olsr;
@@ -333,7 +339,7 @@ int main (int argc, char *argv[])
 */
 
   InternetStackHelper internet;
-  internet.SetRoutingHelper (gpsr);
+  internet.SetRoutingHelper (agra);
   //internet.SetRoutingHelper (list);
   //internet.SetRoutingHelper (aodv); // has effect on the next Install ()
   internet.Install (c);
@@ -422,8 +428,8 @@ int main (int argc, char *argv[])
   srcModel->AddWaypoint(location22);
   srcModel->AddWaypoint(location3);
 
-  //istall gpsr headers to all nodes
-  gpsr.Install ();
+  //istall agra headers to all nodes
+  agra.Install ();
 
   //setup applications
   NS_LOG_INFO ("Create Applications.");

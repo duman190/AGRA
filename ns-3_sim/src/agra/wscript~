@@ -1,0 +1,27 @@
+## -*- Mode: python; py-indent-offset: 4; indent-tabs-mode: nil; coding: utf-8; -*-
+
+def build(bld):
+    module = bld.create_ns3_module('argr', ['location-service', 'internet', 'wifi', 'applications', 'mesh', 'point-to-point', 'virtual-net-device'])
+    module.source = [
+        'model/argr-ptable.cc',
+        'model/argr-rqueue.cc',
+        'model/argr-packet.cc',
+        'model/argr.cc',
+        'helper/argr-helper.cc',
+        ]
+
+    headers = bld(features='ns3header')
+    headers.module = 'argr'
+    headers.source = [
+        'model/argr-ptable.h',
+        'model/argr-rqueue.h',
+        'model/argr-packet.h',
+        'model/argr.h',
+        'helper/argr-helper.h',
+        ]
+
+    #if bld.env['ENABLE_EXAMPLES']:
+    #    bld.recurse('examples')
+
+    #bld.ns3_python_bindings()
+

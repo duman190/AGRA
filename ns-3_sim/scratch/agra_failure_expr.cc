@@ -221,8 +221,8 @@ int main (int argc, char *argv[])
   std::string phyMode ("ErpOfdmRate54Mbps");
   uint16_t RepulsionMode = (uint16_t) 1;
   //Init the location and radius of obstacle
-  double locationX=375,locationY=325;
-  double object_radius=388.909;
+  double locationX=200,locationY=325;
+  double object_radius=350;
   Time FailureTime = Seconds(30.0);
   double FailureProb = 0.0;
   Time StopTime = Seconds(780.0);

@@ -213,13 +213,11 @@ Ipv4Address PositionTable::BestNeighbor(Vector position, Vector nodePos) {
  */
 Ipv4Address PositionTable::ElectrostaticBestNeighbor(Vector position, Vector nodePos,
 		double locationX, double locationY, double radius) {
-	Purge();
-	//FIXME allow parametrization of this parameters
+	Purge();	
 	double q = 1;
-	double n = 2;
-	//FIXME add hole detection mechanism
-	Vector holeC(locationX,locationY,0);//(300,450,0);//(375, 325, 0); // be aware these values are hardcoded for particular experiment
-	double holeR = std::sqrt(2)*radius; //200;//388.909; // be aware these values are hardcoded for particular experiment
+	double n = 2;	
+	Vector holeC(locationX,locationY,0);
+	double holeR = std::sqrt(2)*radius;
 
 	//calculate hole charge ql
 	double b = CalculateDistance(holeC, position);

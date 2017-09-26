@@ -215,7 +215,7 @@ int main (int argc, char *argv[])
   uint16_t RepulsionMode = (uint16_t) 1;
   //Init the location and radius of obstacle
   double locationX=300,locationY=450;
-  double object_radius=200;
+  double object_radius=282;
   Time FailureTime = Seconds(30.0);
   double FailureProb = 0.0;
   Time StopTime = Seconds(720.0);

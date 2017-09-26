@@ -217,7 +217,7 @@ Ipv4Address PositionTable::ElectrostaticBestNeighbor(Vector position, Vector nod
 	double q = 1;
 	double n = 2;	
 	Vector holeC(locationX,locationY,0);
-	double holeR = std::sqrt(2)*radius;
+	double holeR = radius;
 
 	//calculate hole charge ql
 	double b = CalculateDistance(holeC, position);

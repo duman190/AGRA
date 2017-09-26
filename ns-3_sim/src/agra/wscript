@@ -1,0 +1,27 @@
+## -*- Mode: python; py-indent-offset: 4; indent-tabs-mode: nil; coding: utf-8; -*-
+
+def build(bld):
+    module = bld.create_ns3_module('agra', ['location-service', 'internet', 'wifi', 'applications', 'mesh', 'point-to-point', 'virtual-net-device'])
+    module.source = [
+        'model/agra-ptable.cc',
+        'model/agra-rqueue.cc',
+        'model/agra-packet.cc',
+        'model/agra.cc',
+        'helper/agra-helper.cc',
+        ]
+
+    headers = bld(features='ns3header')
+    headers.module = 'agra'
+    headers.source = [
+        'model/agra-ptable.h',
+        'model/agra-rqueue.h',
+        'model/agra-packet.h',
+        'model/agra.h',
+        'helper/agra-helper.h',
+        ]
+
+    #if bld.env['ENABLE_EXAMPLES']:
+    #    bld.recurse('examples')
+
+    #bld.ns3_python_bindings()
+

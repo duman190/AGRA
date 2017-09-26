@@ -1,5 +1,28 @@
-#ifndef GPSR_PTABLE_H
-#define GPSR_PTABLE_H
+/****************************************************************************/
+/* This file is part of AGRA project.                                       */
+/*                                                                          */
+/* AGRA is free software: you can redistribute it and/or modify             */
+/* it under the terms of the GNU General Public License as published by     */
+/* the Free Software Foundation, either version 3 of the License, or        */
+/* (at your option) any later version.                                      */
+/*                                                                          */
+/* AGRA is distributed in the hope that it will be useful,                  */
+/* but WITHOUT ANY WARRANTY; without even the implied warranty of           */
+/* MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the            */
+/* GNU General Public License for more details.                             */
+/*                                                                          */
+/* You should have received a copy of the GNU General Public License        */
+/* along with AGRA.  If not, see <http://www.gnu.org/licenses/>.            */
+/*                                                                          */
+/****************************************************************************/
+/*                                                                          */
+/*  Author:    Dmitrii Chemodanov, University of Missouri-Columbia          */
+/*  Title:     AGRA: AI-augmented Geographic Routing Approach for IoT-based */
+/*             Incident-Supporting Applications                             */
+/*  Revision:  1.0         6/19/2017                                        */
+/****************************************************************************/
+#ifndef AGRA_PTABLE_H
+#define AGRA_PTABLE_H
 #define _DEFINE_DEPRECATED_HASH_CLASSES 0
 #include <map>
 #include <set>
@@ -17,11 +40,11 @@
 #include <complex>
 
 namespace ns3 {
-namespace gpsr {
+namespace agra {
 
 /*
- * \ingroup gpsr
- * \brief Position table used by GPSR
+ * \ingroup agra
+ * \brief Position table used by AGRA
  */
 class PositionTable
 {
@@ -84,7 +107,7 @@ public:
   void PlanarizeNeighbors(Vector nodePos);
 
   /**
-   * \brief Gets next hop according to GPSR protocol
+   * \brief Gets next hop according to AGRA protocol
    * \param position the position of the destination node
    * \param nodePos the position of the node that has the packet
    * \return Ipv4Address of the next hop, Ipv4Address::GetZero () if no nighbour was found in greedy mode
@@ -109,7 +132,7 @@ public:
   }
 
   /**
-   * \brief Gets next hop according to GPSR recovery-mode protocol (right hand rule)
+   * \brief Gets next hop according to AGRA recovery-mode protocol (right hand rule)
    * \param previousHop the position of the node that sent the packet to this node
    * \param nodePos the position of the destination node
    * \return Ipv4Address of the next hop, Ipv4Address::GetZero () if no nighbour was found in greedy mode
@@ -129,11 +152,8 @@ private:
   // Process layer 2 TX error notification
   void ProcessTxError (WifiMacHeader const&);
 
-
-
-
 };
 
-}   // gpsr
+}   // agra
 } // ns3
-#endif /* GPSR_PTABLE_H */
+#endif /* AGRA_PTABLE_H */

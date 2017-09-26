@@ -17,8 +17,8 @@
  *
  * Authors: António Fonseca <afonseca@tagus.inesc-id.pt>, written after OlsrHelper by Mathieu Lacage <mathieu.lacage@sophia.inria.fr>
  */
-#include "gpsr-helper.h"
-#include "ns3/gpsr.h"
+#include "argr-helper.h"
+#include "ns3/argr.h"
 #include "ns3/node-list.h"
 #include "ns3/names.h"
 #include "ns3/ipv4-list-routing.h"
@@ -29,38 +29,38 @@
 
 namespace ns3 {
 
-GpsrHelper::GpsrHelper ()
+argrHelper::ArgrHelper ()
   : Ipv4RoutingHelper ()
 {
-  m_agentFactory.SetTypeId ("ns3::gpsr::RoutingProtocol");
+  m_agentFactory.SetTypeId ("ns3::argr::RoutingProtocol");
 }
 
-GpsrHelper*
-GpsrHelper::Copy (void) const
+ArgrHelper*
+ArgrHelper::Copy (void) const
 {
-  return new GpsrHelper (*this);
+  return new ArgrHelper (*this);
 }
 
 Ptr<Ipv4RoutingProtocol>
-GpsrHelper::Create (Ptr<Node> node) const
+ArgrHelper::Create (Ptr<Node> node) const
 {
   //Ptr<Ipv4L4Protocol> ipv4l4 = node->GetObject<Ipv4L4Protocol> ();
-  Ptr<gpsr::RoutingProtocol> gpsr = m_agentFactory.Create<gpsr::RoutingProtocol> ();
-  //gpsr->SetDownTarget (ipv4l4->GetDownTarget ());
-  //ipv4l4->SetDownTarget (MakeCallback (&gpsr::RoutingProtocol::AddHeaders, gpsr));
-  node->AggregateObject (gpsr);
-  return gpsr;
+  Ptr<argr::RoutingProtocol> argr = m_agentFactory.Create<argr::RoutingProtocol> ();
+  //argr->SetDownTarget (ipv4l4->GetDownTarget ());
+  //ipv4l4->SetDownTarget (MakeCallback (&argr::RoutingProtocol::AddHeaders, argr));
+  node->AggregateObject (argr);
+  return argr;
 }
 
 void
-GpsrHelper::Set (std::string name, const AttributeValue &value)
+ArgrHelper::Set (std::string name, const AttributeValue &value)
 {
   m_agentFactory.Set (name, value);
 }
 
 
 void 
-GpsrHelper::Install (void) const
+ArgrHelper::Install (void) const
 {
   NodeContainer c = NodeContainer::GetGlobal ();
   for (NodeContainer::Iterator i = c.Begin (); i != c.End (); ++i)
@@ -68,13 +68,13 @@ GpsrHelper::Install (void) const
       Ptr<Node> node = (*i);
       Ptr<UdpL4Protocol> udp = node->GetObject<UdpL4Protocol> ();
       Ptr<TcpL4Protocol> tcp = node->GetObject<TcpL4Protocol> ();
-      Ptr<gpsr::RoutingProtocol> gpsr = node->GetObject<gpsr::RoutingProtocol> ();
+      Ptr<argr::RoutingProtocol> argr = node->GetObject<argr::RoutingProtocol> ();
       //Ptr<LocationService> lS = CreateObject<GodLocationService>();
-      //gpsr->SetLS(lS);
-      gpsr->SetUdpDownTarget (udp->GetDownTarget ());
-      udp->SetDownTarget (MakeCallback(&gpsr::RoutingProtocol::AddHeaders, gpsr));
-      gpsr->SetTcpDownTarget (tcp->GetDownTarget ());
-      tcp->SetDownTarget (MakeCallback(&gpsr::RoutingProtocol::AddHeaders, gpsr));
+      //argr->SetLS(lS);
+      argr->SetUdpDownTarget (udp->GetDownTarget ());
+      udp->SetDownTarget (MakeCallback(&argr::RoutingProtocol::AddHeaders, argr));
+      argr->SetTcpDownTarget (tcp->GetDownTarget ());
+      tcp->SetDownTarget (MakeCallback(&argr::RoutingProtocol::AddHeaders, argr));
     }
 
 

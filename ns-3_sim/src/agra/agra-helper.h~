@@ -17,8 +17,8 @@
  *
  * Authors: Pavel Boyko <boyko@iitp.ru>, written after OlsrHelper by Mathieu Lacage <mathieu.lacage@sophia.inria.fr>
  */
-#ifndef GPSRHELPER_H_
-#define GPSRHELPER_H_
+#ifndef AGRAHELPER_H_
+#define AGRAHELPER_H_
 
 #include "ns3/object-factory.h"
 #include "ns3/node.h"
@@ -27,13 +27,13 @@
 
 namespace ns3 {
 /**
- * \ingroup gpsr
- * \brief Helper class that adds GPSR routing to nodes.
+ * \ingroup agra
+ * \brief Helper class that adds agra routing to nodes.
  */
-class GpsrHelper : public Ipv4RoutingHelper
+class AgraHelper : public Ipv4RoutingHelper
 {
 public:
-  GpsrHelper ();
+  AgraHelper ();
 
   /**
    * \internal
@@ -42,7 +42,7 @@ public:
    * This method is mainly for internal use by the other helpers;
    * clients are expected to free the dynamic memory allocated by this method
    */
-  GpsrHelper* Copy (void) const;
+  AgraHelper* Copy (void) const;
 
   /**
    * \param node the node on which the routing protocol will run
@@ -50,14 +50,14 @@ public:
    *
    * This method will be called by ns3::InternetStackHelper::Install
    *
-   * TODO: support installing GPSR on the subset of all available IP interfaces
+   * TODO: support installing agra on the subset of all available IP interfaces
    */
   virtual Ptr<Ipv4RoutingProtocol> Create (Ptr<Node> node) const;
   /**
    * \param name the name of the attribute to set
    * \param value the value of the attribute to set.
    *
-   * This method controls the attributes of ns3::gpsr::RoutingProtocol
+   * This method controls the attributes of ns3::agra::RoutingProtocol
    */
   void Set (std::string name, const AttributeValue &value);
 
@@ -68,4 +68,4 @@ private:
 };
 
 }
-#endif /* GPSRHELPER_H_ */
+#endif /* AGRAHELPER_H_ */

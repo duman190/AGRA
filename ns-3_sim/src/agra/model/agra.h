@@ -1,19 +1,39 @@
 /* -*- Mode:C++; c-file-style:"gnu"; indent-tabs-mode:nil; -*- */
-/*
+/****************************************************************************/
+/* This file is part of AGRA project.                                       */
+/*                                                                          */
+/* AGRA is free software: you can redistribute it and/or modify             */
+/* it under the terms of the GNU General Public License as published by     */
+/* the Free Software Foundation, either version 3 of the License, or        */
+/* (at your option) any later version.                                      */
+/*                                                                          */
+/* AGRA is distributed in the hope that it will be useful,                  */
+/* but WITHOUT ANY WARRANTY; without even the implied warranty of           */
+/* MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the            */
+/* GNU General Public License for more details.                             */
+/*                                                                          */
+/* You should have received a copy of the GNU General Public License        */
+/* along with AGRA.  If not, see <http://www.gnu.org/licenses/>.            */
+/*                                                                          */
+/****************************************************************************/
+/*                                                                          */
+/*  Author:    Dmitrii Chemodanov, University of Missouri-Columbia          */
+/*  Title:     AGRA: AI-augmented Geographic Routing Approach for IoT-based */
+/*             Incident-Supporting Applications                             */
+/*  Revision:  1.0         6/19/2017                                        */
+/****************************************************************************/
+#ifndef AGRA_H
+#define AGRA_H
 
- */
-#ifndef GPSR_H
-#define GPSR_H
-
-#include "gpsr-ptable.h"
+#include "agra-ptable.h"
 #include "ns3/node.h"
-#include "gpsr-packet.h"
+#include "agra-packet.h"
 #include "ns3/ipv4-routing-protocol.h"
 #include "ns3/ipv4-interface.h"
 #include "ns3/ipv4-l3-protocol.h"
 #include "ns3/ip-l4-protocol.h"
 #include "ns3/mobility-model.h"
-#include "gpsr-rqueue.h"
+#include "agra-rqueue.h"
 
 #include "ns3/ipv4-header.h"
 #include "ns3/ipv4-address.h"
@@ -25,17 +45,17 @@
 #include <complex>
 
 namespace ns3 {
-namespace gpsr {
+namespace agra {
 /**
- * \ingroup gpsr
+ * \ingroup agra
  *
- * \brief GPSR routing protocol
+ * \brief AGRA routing protocol
  */
 class RoutingProtocol : public Ipv4RoutingProtocol
 {
 public:
   static TypeId GetTypeId (void);
-  static const uint32_t GPSR_PORT;
+  static const uint32_t AGRA_PORT;
 
   /// c-tor                        
   RoutingProtocol ();
@@ -57,7 +77,7 @@ public:
   virtual void NotifyAddAddress (uint32_t interface, Ipv4InterfaceAddress address);
   virtual void NotifyRemoveAddress (uint32_t interface, Ipv4InterfaceAddress address);
   virtual void SetIpv4 (Ptr<Ipv4> ipv4);
-  virtual void RecvGPSR (Ptr<Socket> socket);
+  virtual void RecvAGRA (Ptr<Socket> socket);
   virtual void UpdateRouteToNeighbor (Ipv4Address sender, Ipv4Address receiver, Vector Pos);
   virtual void SendHello ();
   virtual bool IsMyOwnAddress (Ipv4Address src);
@@ -127,11 +147,11 @@ private:
   Timer CheckQueueTimer;
   uint8_t LocationServiceName;
   PositionTable m_neighbors;
-  public:
-    bool PerimeterMode;
-  private:
+  bool PerimeterMode;
   //set 1 to use avoidance with EGF
   uint8_t RepulsionMode;
+  //set location and radius of obstacle
+  double locationX,locationY,object_radius;
   std::list<Ipv4Address> m_queuedAddresses;
   Ptr<LocationService> m_locationService;
 
@@ -141,4 +161,4 @@ private:
 };
 }
 }
-#endif /* GPSRROUTINGPROTOCOL_H */
+#endif /* AGRAROUTINGPROTOCOL_H */

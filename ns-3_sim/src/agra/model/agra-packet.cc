@@ -1,18 +1,40 @@
 /* -*- Mode:C++; c-file-style:"gnu"; indent-tabs-mode:nil; -*- */
-
-#include "gpsr-packet.h"
+/****************************************************************************/
+/* This file is part of AGRA project.                                       */
+/*                                                                          */
+/* AGRA is free software: you can redistribute it and/or modify             */
+/* it under the terms of the GNU General Public License as published by     */
+/* the Free Software Foundation, either version 3 of the License, or        */
+/* (at your option) any later version.                                      */
+/*                                                                          */
+/* AGRA is distributed in the hope that it will be useful,                  */
+/* but WITHOUT ANY WARRANTY; without even the implied warranty of           */
+/* MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the            */
+/* GNU General Public License for more details.                             */
+/*                                                                          */
+/* You should have received a copy of the GNU General Public License        */
+/* along with AGRA.  If not, see <http://www.gnu.org/licenses/>.            */
+/*                                                                          */
+/****************************************************************************/
+/*                                                                          */
+/*  Author:    Dmitrii Chemodanov, University of Missouri-Columbia          */
+/*  Title:     AGRA: AI-augmented Geographic Routing Approach for IoT-based */
+/*             Incident-Supporting Applications                             */
+/*  Revision:  1.0         6/19/2017                                        */
+/****************************************************************************/
+#include "agra-packet.h"
 #include "ns3/address-utils.h"
 #include "ns3/packet.h"
 #include "ns3/log.h"
 
-NS_LOG_COMPONENT_DEFINE ("GpsrPacket");
+NS_LOG_COMPONENT_DEFINE ("AgraPacket");
 
 namespace ns3 {
-namespace gpsr {
+namespace agra {
 
 NS_OBJECT_ENSURE_REGISTERED (TypeHeader);
 
-TypeHeader::TypeHeader (MessageType t)
+TypeHeader::TypeHeader (MessageType t = AGRATYPE_HELLO)
   : m_type (t),
     m_valid (true)
 {
@@ -21,7 +43,7 @@ TypeHeader::TypeHeader (MessageType t)
 TypeId
 TypeHeader::GetTypeId ()
 {
-  static TypeId tid = TypeId ("ns3::gpsr::TypeHeader")
+  static TypeId tid = TypeId ("ns3::agra::TypeHeader")
     .SetParent<Header> ()
     .AddConstructor<TypeHeader> ()
   ;
@@ -54,8 +76,8 @@ TypeHeader::Deserialize (Buffer::Iterator start)
   m_valid = true;
   switch (type)
     {
-    case GPSRTYPE_HELLO:
-    case GPSRTYPE_POS:
+    case AGRATYPE_HELLO:
+    case AGRATYPE_POS:
       {
         m_type = (MessageType) type;
         break;
@@ -73,12 +95,12 @@ TypeHeader::Print (std::ostream &os) const
 {
   switch (m_type)
     {
-    case GPSRTYPE_HELLO:
+    case AGRATYPE_HELLO:
       {
         os << "HELLO";
         break;
       }
-    case GPSRTYPE_POS:
+    case AGRATYPE_POS:
       {
         os << "POSITION";
         break;
@@ -115,7 +137,7 @@ NS_OBJECT_ENSURE_REGISTERED (HelloHeader);
 TypeId
 HelloHeader::GetTypeId ()
 {
-  static TypeId tid = TypeId ("ns3::gpsr::HelloHeader")
+  static TypeId tid = TypeId ("ns3::agra::HelloHeader")
     .SetParent<Header> ()
     .AddConstructor<HelloHeader> ()
   ;
@@ -207,7 +229,7 @@ NS_OBJECT_ENSURE_REGISTERED (PositionHeader);
 TypeId
 PositionHeader::GetTypeId ()
 {
-  static TypeId tid = TypeId ("ns3::gpsr::PositionHeader")
+  static TypeId tid = TypeId ("ns3::agra::PositionHeader")
     .SetParent<Header> ()
     .AddConstructor<PositionHeader> ()
   ;
@@ -282,7 +304,7 @@ operator<< (std::ostream & os, PositionHeader const & h)
 bool
 PositionHeader::operator== (PositionHeader const & o) const
 {
-  return (m_dstPosx == o.m_dstPosx && m_dstPosy == o.m_dstPosy && m_updated == o.m_updated && m_recPosx == o.m_recPosx && m_recPosy == o.m_recPosy && m_inRec == o.m_inRec && m_lastPosx == o.m_lastPosx && m_lastPosy == o.m_lastPosy);
+  return (m_dstPosx == o.m_dstPosx && m_dstPosy == m_dstPosy && m_updated == o.m_updated && m_recPosx == o.m_recPosx && m_recPosy == o.m_recPosy && m_inRec == o.m_inRec && m_lastPosx == o.m_lastPosx && m_lastPosy == o.m_lastPosy);
 }
 
 

@@ -1,12 +1,35 @@
 /* -*- Mode:C++; c-file-style:"gnu"; indent-tabs-mode:nil; -*- */
 /*
- * GPSR
+ * AGRA
  *
  */
+/****************************************************************************/
+/* This file is part of AGRA project.                                       */
+/*                                                                          */
+/* AGRA is free software: you can redistribute it and/or modify             */
+/* it under the terms of the GNU General Public License as published by     */
+/* the Free Software Foundation, either version 3 of the License, or        */
+/* (at your option) any later version.                                      */
+/*                                                                          */
+/* AGRA is distributed in the hope that it will be useful,                  */
+/* but WITHOUT ANY WARRANTY; without even the implied warranty of           */
+/* MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the            */
+/* GNU General Public License for more details.                             */
+/*                                                                          */
+/* You should have received a copy of the GNU General Public License        */
+/* along with AGRA.  If not, see <http://www.gnu.org/licenses/>.            */
+/*                                                                          */
+/****************************************************************************/
+/*                                                                          */
+/*  Author:    Dmitrii Chemodanov, University of Missouri-Columbia          */
+/*  Title:     AGRA: AI-augmented Geographic Routing Approach for IoT-based */
+/*             Incident-Supporting Applications                             */
+/*  Revision:  1.0         6/19/2017                                        */
+/****************************************************************************/
 #define NS_LOG_APPEND_CONTEXT                                           \
   if (m_ipv4) { std::clog << "[node " << m_ipv4->GetObject<Node> ()->GetId () << "] "; }
 
-#include "gpsr.h"
+#include "agra.h"
 #include "ns3/log.h"
 #include "ns3/boolean.h"
 #include "ns3/random-variable-stream.h"
@@ -18,14 +41,14 @@
 #include <algorithm>
 #include <limits>
 
-#define GPSR_LS_GOD 0
+#define AGRA_LS_GOD 0
 
-#define GPSR_LS_RLS 1
+#define AGRA_LS_RLS 1
 
-NS_LOG_COMPONENT_DEFINE ("GpsrRoutingProtocol");
+NS_LOG_COMPONENT_DEFINE ("AgraRoutingProtocol");
 
 namespace ns3 {
-namespace gpsr {
+namespace agra {
 
 struct DeferredRouteOutputTag: public Tag {
 	/// Positive if output device is fixed in RouteOutput
@@ -37,7 +60,7 @@ struct DeferredRouteOutputTag: public Tag {
 
 	static TypeId GetTypeId() {
 		static TypeId tid =
-				TypeId("ns3::gpsr::DeferredRouteOutputTag").SetParent<Tag>();
+				TypeId("ns3::agra::DeferredRouteOutputTag").SetParent<Tag>();
 		return tid;
 	}
 
@@ -65,18 +88,18 @@ struct DeferredRouteOutputTag: public Tag {
 /********** Miscellaneous constants **********/
 Ptr<UniformRandomVariable> rvar = CreateObject<UniformRandomVariable>();
 /// Maximum allowed jitter.
-#define GPSR_MAXJITTER          (HelloInterval.GetSeconds () / 2)
-/// Random number between [(-GPSR_MAXJITTER)-GPSR_MAXJITTER] used to jitter HELLO packet transmission.
-#define JITTER (Seconds (rvar->GetValue (-GPSR_MAXJITTER, GPSR_MAXJITTER))) 
-#define FIRST_JITTER (Seconds (rvar->GetValue (0, GPSR_MAXJITTER))) //first Hello can not be in the past, used only on SetIpv4
+#define AGRA_MAXJITTER          (HelloInterval.GetSeconds () / 2)
+/// Random number between [(-AGRA_MAXJITTER)-AGRA_MAXJITTER] used to jitter HELLO packet transmission.
+#define JITTER (Seconds (rvar->GetValue (-AGRA_MAXJITTER, AGRA_MAXJITTER))) 
+#define FIRST_JITTER (Seconds (rvar->GetValue (0, AGRA_MAXJITTER))) //first Hello can not be in the past, used only on SetIpv4
 
 NS_OBJECT_ENSURE_REGISTERED (RoutingProtocol);
 
-/// UDP Port for GPSR control traffic, not defined by IANA yet
-const uint32_t RoutingProtocol::GPSR_PORT = 666;
+/// UDP Port for AGRA control traffic, not defined by IANA yet
+const uint32_t RoutingProtocol::AGRA_PORT = 666;
 
 RoutingProtocol::RoutingProtocol() :
-		HelloInterval(Seconds(1)), MaxQueueLen(64), MaxQueueTime(Seconds(30)), m_queue(
+		HelloInterval(Seconds(0.25)), MaxQueueLen(64), MaxQueueTime(Seconds(30)), m_queue( //1 for 5 m/s and 0.25 for 20 m/s
 				MaxQueueLen, MaxQueueTime), HelloIntervalTimer(
 				Timer::CANCEL_ON_DESTROY), PerimeterMode(false), RepulsionMode(
 				0) {
@@ -86,16 +109,16 @@ RoutingProtocol::RoutingProtocol() :
 
 TypeId RoutingProtocol::GetTypeId(void) {
 	static TypeId tid =
-			TypeId("ns3::gpsr::RoutingProtocol").SetParent<Ipv4RoutingProtocol>().AddConstructor<
+			TypeId("ns3::agra::RoutingProtocol").SetParent<Ipv4RoutingProtocol>().AddConstructor<
 					RoutingProtocol>().AddAttribute("HelloInterval",
-					"HELLO messages emission interval.", TimeValue(Seconds(1)),
+					"HELLO messages emission interval.", TimeValue(Seconds(0.25)), //1 for 5 m/s and 0.25 for 20 m/s
 					MakeTimeAccessor(&RoutingProtocol::HelloInterval),
 					MakeTimeChecker()).AddAttribute("LocationServiceName",
 					"Indicates wich Location Service is enabled",
-					EnumValue(GPSR_LS_GOD),
+					EnumValue(AGRA_LS_GOD),
 					MakeEnumAccessor(&RoutingProtocol::LocationServiceName),
-					MakeEnumChecker(GPSR_LS_GOD, "GOD",
-					GPSR_LS_RLS, "RLS")).AddAttribute("PerimeterMode",
+					MakeEnumChecker(AGRA_LS_GOD, "GOD",
+					AGRA_LS_RLS, "RLS")).AddAttribute("PerimeterMode",
 					"Indicates if PerimeterMode is enabled",
 					BooleanValue(false),
 					MakeBooleanAccessor(&RoutingProtocol::PerimeterMode),
@@ -103,7 +126,16 @@ TypeId RoutingProtocol::GetTypeId(void) {
 					"Indicates wheteher EGF avoidance is used or not",
 					UintegerValue(0),
 					MakeUintegerAccessor(&RoutingProtocol::RepulsionMode),
-					MakeUintegerChecker<uint8_t>());
+					MakeUintegerChecker<uint8_t>()).AddAttribute("locationX",
+                                        "location obstacle on X axis",DoubleValue(0),
+                                        MakeDoubleAccessor(&RoutingProtocol::locationX),
+					MakeDoubleChecker<double>()).AddAttribute("locationY",
+                                        "location obstacle on Y axis",DoubleValue(0),
+                                        MakeDoubleAccessor(&RoutingProtocol::locationY),
+					MakeDoubleChecker<double>()).AddAtribute("object_radius",
+                                        "radius of obstacle in scenario",DoubleValue(0),
+                                        MakeDoubleAccessor(&RoutingProtocol::object_radius),
+					MakeDoubleChecker<double>());
 	/*.AddAttribute("RepulsionMode",
 	 "Indicates wheteher EGF avoidance is used or not",
 	 UintegerValue(1),
@@ -136,7 +168,7 @@ bool RoutingProtocol::RouteInput(Ptr<const Packet> p, const Ipv4Header &header,
 			this << p->GetUid() << header.GetDestination()
 					<< idev->GetAddress());
 	if (m_socketAddresses.empty()) {
-		NS_LOG_LOGIC("No gpsr interfaces");
+		NS_LOG_LOGIC("No agra interfaces");
 		return false;
 	}
 	NS_ASSERT(m_ipv4 != 0);
@@ -158,17 +190,17 @@ bool RoutingProtocol::RouteInput(Ptr<const Packet> p, const Ipv4Header &header,
 	if (m_ipv4->IsDestinationAddress(dst, iif)) {
 
 		Ptr<Packet> packet = p->Copy();
-		TypeHeader tHeader(GPSRTYPE_POS);
+		TypeHeader tHeader(AGRATYPE_POS);
 		packet->RemoveHeader(tHeader);
 		if (!tHeader.IsValid()) {
 			NS_LOG_DEBUG(
-					"GPSR message " << packet->GetUid()
+					"AGRA message " << packet->GetUid()
 							<< " with unknown type received: " << tHeader.Get()
 							<< ". Ignored");
 			return false;
 		}
 
-		if (tHeader.Get() == GPSRTYPE_POS) {
+		if (tHeader.Get() == AGRATYPE_POS) {
 			PositionHeader phdr;
 			packet->RemoveHeader(phdr);
 		}
@@ -266,6 +298,8 @@ bool RoutingProtocol::SendPacketFromQueue(Ipv4Address dst) {
 	if (m_neighbors.isNeighbour(dst)) {
 		nextHop = dst;
 	} else {
+		//std::cout << "We start at Greedy Forwarding on Queue!" << "[node "
+		//		<< m_ipv4->GetObject<Node>()->GetId() << "]"<< std::endl;
 		Vector dstPos = m_locationService->GetPosition(dst);
 		nextHop = m_neighbors.BestNeighbor(dstPos, myPos);
 		if (nextHop == Ipv4Address::GetZero()) {
@@ -284,16 +318,16 @@ bool RoutingProtocol::SendPacketFromQueue(Ipv4Address dst) {
 						queueEntry.GetUnicastForwardCallback();
 				Ipv4Header header = queueEntry.GetIpv4Header();
 
-				TypeHeader tHeader(GPSRTYPE_POS);
+				TypeHeader tHeader(AGRATYPE_POS);
 				p->RemoveHeader(tHeader);
 				if (!tHeader.IsValid()) {
 					NS_LOG_DEBUG(
-							"GPSR message " << p->GetUid()
+							"AGRA message " << p->GetUid()
 									<< " with unknown type received: "
 									<< tHeader.Get() << ". Drop");
 					return false;     // drop
 				}
-				if (tHeader.Get() == GPSRTYPE_POS) {
+				if (tHeader.Get() == AGRATYPE_POS) {
 					PositionHeader hdr;
 					p->RemoveHeader(hdr);
 					Position.x = hdr.GetDstPosx();
@@ -359,17 +393,17 @@ bool RoutingProtocol::Forwarding(Ptr<const Packet> packet,
 	Vector RecPosition;
 	uint8_t inRec = 0;
 
-	TypeHeader tHeader(GPSRTYPE_POS);
+	TypeHeader tHeader(AGRATYPE_POS);
 	PositionHeader hdr;
 	p->RemoveHeader(tHeader);
 	if (!tHeader.IsValid()) {
 		NS_LOG_DEBUG(
-				"GPSR message " << p->GetUid()
+				"AGRA message " << p->GetUid()
 						<< " with unknown type received: " << tHeader.Get()
 						<< ". Drop");
 		return false;     // drop
 	}
-	if (tHeader.Get() == GPSRTYPE_POS) {
+	if (tHeader.Get() == AGRATYPE_POS) {
 
 		p->RemoveHeader(hdr);
 		Position.x = hdr.GetDstPosx();
@@ -391,6 +425,7 @@ bool RoutingProtocol::Forwarding(Ptr<const Packet> packet,
 		inRec = 0;
 		hdr.SetInRec(0);
 		NS_LOG_LOGIC("No longer in Recovery to " << dst << " in " << myPos);
+                //std::cout << "No longer in Recovery to " << dst << " in " << myPos << std::endl;
 	}
 
 	if (inRec) {
@@ -414,14 +449,20 @@ bool RoutingProtocol::Forwarding(Ptr<const Packet> packet,
 	if (m_neighbors.isNeighbour(dst)) {
 		nextHop = dst;
 	} else if (RepulsionMode) {
-//		std::cout << "We start at Repulsion Mode!" << "[node "
-//				<< m_ipv4->GetObject<Node>()->GetId() << "] ttl="
-//				<< (uint32_t) header.GetTtl() << std::endl;
-		nextHop = m_neighbors.ElectrostaticBestNeighbor(Position, myPos);
+		//std::cout << "We start at Repulsion Mode!" << "[node "
+		//		<< m_ipv4->GetObject<Node>()->GetId() << "] ttl="
+		//		<< (uint32_t) header.GetTtl() << " dstPos=" << Position << std::endl;
+		nextHop = m_neighbors.ElectrostaticBestNeighbor(Position, myPos, locationX, locationY, object_radius);
+                if (nextHop == Ipv4Address::GetZero()) {
+                //std::cout << "We switch to Greedy Forwarding!" << "[node "
+		//		<< m_ipv4->GetObject<Node>()->GetId() << "] ttl="
+		//		<< (uint32_t) header.GetTtl() << std::endl;
+                    nextHop = m_neighbors.BestNeighbor(Position, myPos);                
+                }
 	} else {
-//		std::cout << "We start at Greedy Forwarding!" << "[node "
-//				<< m_ipv4->GetObject<Node>()->GetId() << "] ttl="
-//				<< (uint32_t) header.GetTtl() << std::endl;
+		//std::cout << "We start at Greedy Forwarding!" << "[node "
+		//		<< m_ipv4->GetObject<Node>()->GetId() << "] ttl="
+	        //			<< (uint32_t) header.GetTtl() << std::endl;
 		nextHop = m_neighbors.BestNeighbor(Position, myPos);
 	}
 	if (nextHop != Ipv4Address::GetZero()) {
@@ -452,6 +493,9 @@ bool RoutingProtocol::Forwarding(Ptr<const Packet> packet,
 		ucb(route, p, header);
 		return true;
 	} else {
+                //std::cout << "Entering recovery-mode to " << dst << " in "
+		//	<< m_ipv4->GetAddress(1, 0).GetLocal() << " dstPos=" << Position 
+                //        << "if dst is neighbor? - " << m_neighbors.isNeighbour(dst)<< std::endl;
 		hdr.SetInRec(1);
 		hdr.SetRecPosx(myPos.x);
 		hdr.SetRecPosy(myPos.y);
@@ -489,16 +533,16 @@ void RoutingProtocol::RecoveryMode(Ipv4Address dst, Ptr<Packet> p,
 	myPos.x = positionX;
 	myPos.y = positionY;
 
-	TypeHeader tHeader(GPSRTYPE_POS);
+	TypeHeader tHeader(AGRATYPE_POS);
 	p->RemoveHeader(tHeader);
 	if (!tHeader.IsValid()) {
 		NS_LOG_DEBUG(
-				"GPSR message " << p->GetUid()
+				"AGRA message " << p->GetUid()
 						<< " with unknown type received: " << tHeader.Get()
 						<< ". Drop");
 		return;     // drop
 	}
-	if (tHeader.Get() == GPSRTYPE_POS) {
+	if (tHeader.Get() == AGRATYPE_POS) {
 		PositionHeader hdr;
 		p->RemoveHeader(hdr);
 		Position.x = hdr.GetDstPosx();
@@ -547,7 +591,7 @@ void RoutingProtocol::NotifyInterfaceUp(uint32_t interface) {
 	Ptr<Ipv4L3Protocol> l3 = m_ipv4->GetObject<Ipv4L3Protocol>();
 	if (l3->GetNAddresses(interface) > 1) {
 		NS_LOG_WARN(
-				"GPSR does not work with more then one address per each interface.");
+				"AGRA does not work with more then one address per each interface.");
 	}
 	Ipv4InterfaceAddress iface = l3->GetAddress(interface, 0);
 	if (iface.GetLocal() == Ipv4Address("127.0.0.1")) {
@@ -558,8 +602,8 @@ void RoutingProtocol::NotifyInterfaceUp(uint32_t interface) {
 	Ptr < Socket > socket = Socket::CreateSocket(GetObject<Node>(),
 			UdpSocketFactory::GetTypeId());
 	NS_ASSERT(socket != 0);
-	socket->SetRecvCallback(MakeCallback(&RoutingProtocol::RecvGPSR, this));
-	socket->Bind(InetSocketAddress(Ipv4Address::GetAny(), GPSR_PORT));
+	socket->SetRecvCallback(MakeCallback(&RoutingProtocol::RecvAGRA, this));
+	socket->Bind(InetSocketAddress(Ipv4Address::GetAny(), AGRA_PORT));
 	socket->BindToNetDevice(l3->GetNetDevice(interface));
 	socket->SetAllowBroadcast(true);
 	socket->SetAttribute("IpTtl", UintegerValue(1));
@@ -582,16 +626,16 @@ void RoutingProtocol::NotifyInterfaceUp(uint32_t interface) {
 
 }
 
-void RoutingProtocol::RecvGPSR(Ptr<Socket> socket) {
+void RoutingProtocol::RecvAGRA(Ptr<Socket> socket) {
 	NS_LOG_FUNCTION(this << socket);
 	Address sourceAddress;
 	Ptr<Packet> packet = socket->RecvFrom(sourceAddress);
 
-	TypeHeader tHeader(GPSRTYPE_HELLO);
+	TypeHeader tHeader(AGRATYPE_HELLO);
 	packet->RemoveHeader(tHeader);
 	if (!tHeader.IsValid()) {
 		NS_LOG_DEBUG(
-				"GPSR message " << packet->GetUid()
+				"AGRA message " << packet->GetUid()
 						<< " with unknown type received: " << tHeader.Get()
 						<< ". Ignored");
 		return;
@@ -639,7 +683,7 @@ void RoutingProtocol::NotifyInterfaceDown(uint32_t interface) {
 	socket->Close();
 	m_socketAddresses.erase(socket);
 	if (m_socketAddresses.empty()) {
-		NS_LOG_LOGIC("No gpsr interfaces");
+		NS_LOG_LOGIC("No agra interfaces");
 		m_neighbors.Clear();
 		m_locationService->Clear();
 		return;
@@ -681,10 +725,10 @@ void RoutingProtocol::NotifyAddAddress(uint32_t interface,
 					UdpSocketFactory::GetTypeId());
 			NS_ASSERT(socket != 0);
 			socket->SetRecvCallback(
-					MakeCallback(&RoutingProtocol::RecvGPSR, this));
+					MakeCallback(&RoutingProtocol::RecvAGRA, this));
 			socket->BindToNetDevice(l3->GetNetDevice(interface));
 			// Bind to any IP address so that broadcasts can be received
-			socket->Bind(InetSocketAddress(Ipv4Address::GetAny(), GPSR_PORT));
+			socket->Bind(InetSocketAddress(Ipv4Address::GetAny(), AGRA_PORT));
 			socket->SetAllowBroadcast(true);
 			m_socketAddresses.insert(std::make_pair(socket, iface));
 
@@ -693,7 +737,7 @@ void RoutingProtocol::NotifyAddAddress(uint32_t interface,
 		}
 	} else {
 		NS_LOG_LOGIC(
-				"GPSR does not work with more then one address per each interface. Ignore added address");
+				"AGRA does not work with more then one address per each interface. Ignore added address");
 	}
 }
 
@@ -712,9 +756,9 @@ void RoutingProtocol::NotifyRemoveAddress(uint32_t i,
 					UdpSocketFactory::GetTypeId());
 			NS_ASSERT(socket != 0);
 			socket->SetRecvCallback(
-					MakeCallback(&RoutingProtocol::RecvGPSR, this));
+					MakeCallback(&RoutingProtocol::RecvAGRA, this));
 			// Bind to any IP address so that broadcasts can be received
-			socket->Bind(InetSocketAddress(Ipv4Address::GetAny(), GPSR_PORT));
+			socket->Bind(InetSocketAddress(Ipv4Address::GetAny(), AGRA_PORT));
 			socket->SetAllowBroadcast(true);
 			m_socketAddresses.insert(std::make_pair(socket, iface));
 
@@ -724,13 +768,13 @@ void RoutingProtocol::NotifyRemoveAddress(uint32_t i,
 
 		}
 		if (m_socketAddresses.empty()) {
-			NS_LOG_LOGIC("No gpsr interfaces");
+			NS_LOG_LOGIC("No agra interfaces");
 			m_neighbors.Clear();
 			m_locationService->Clear();
 			return;
 		}
 	} else {
-		NS_LOG_LOGIC("Remove address not participating in GPSR operation");
+		NS_LOG_LOGIC("Remove address not participating in AGRA operation");
 	}
 }
 
@@ -773,7 +817,7 @@ void RoutingProtocol::SendHello() {
 
 		Ptr<Packet> packet = Create<Packet>();
 		packet->AddHeader(helloHeader);
-		TypeHeader tHeader(GPSRTYPE_HELLO);
+		TypeHeader tHeader(AGRATYPE_HELLO);
 		packet->AddHeader(tHeader);
 		// Send to all-hosts broadcast if on /32 addr, subnet-directed otherwise
 		Ipv4Address destination;
@@ -782,7 +826,7 @@ void RoutingProtocol::SendHello() {
 		} else {
 			destination = iface.GetBroadcast();
 		}
-		socket->SendTo(packet, 0, InetSocketAddress(destination, GPSR_PORT));
+		socket->SendTo(packet, 0, InetSocketAddress(destination, AGRA_PORT));
 
 	}
 }
@@ -800,7 +844,7 @@ bool RoutingProtocol::IsMyOwnAddress(Ipv4Address src) {
 }
 
 void RoutingProtocol::Start() {
-	//std::cout<<"GPSR protocol has started at node["<<m_ipv4->GetObject<Node>()->GetId()<<"]"<<std::endl;
+	//std::cout<<"AGRA protocol has started at node["<<m_ipv4->GetObject<Node>()->GetId()<<"]"<<std::endl;
 	NS_LOG_FUNCTION(this);
 	m_queuedAddresses.clear();
 
@@ -809,11 +853,11 @@ void RoutingProtocol::Start() {
 
 
 	 switch (LocationServiceName) {
-	 case GPSR_LS_GOD:
+	 case AGRA_LS_GOD:
 	 NS_LOG_DEBUG("GodLS in use");
 	 m_locationService = CreateObject<GodLocationService>();
 	 break;
-	 case GPSR_LS_RLS:
+	 case AGRA_LS_RLS:
 	 NS_LOG_UNCOND("RLS not yet implemented");
 	 break;
 	 }
@@ -845,14 +889,14 @@ Ptr<Ipv4Route> RoutingProtocol::LoopbackRoute(const Ipv4Header & hdr,
 		rt->SetSource(j->second.GetLocal());
 	}
 	NS_ASSERT_MSG(rt->GetSource() != Ipv4Address(),
-			"Valid GPSR source address not found");
+			"Valid AGRA source address not found");
 	rt->SetGateway(Ipv4Address("127.0.0.1"));
 	rt->SetOutputDevice(m_lo);
 	return rt;
 }
 
 int RoutingProtocol::GetProtocolNumber(void) const {
-	return GPSR_PORT;
+	return AGRA_PORT;
 }
 
 void RoutingProtocol::AddHeaders(Ptr<Packet> p, Ipv4Address source,
@@ -889,7 +933,7 @@ void RoutingProtocol::AddHeaders(Ptr<Packet> p, Ipv4Address source,
 	PositionHeader posHeader(positionX, positionY, hdrTime, (uint64_t) 0,
 			(uint64_t) 0, (uint8_t) 0, myPos.x, myPos.y);
 	p->AddHeader(posHeader);
-	TypeHeader tHeader(GPSRTYPE_POS);
+	TypeHeader tHeader(AGRATYPE_POS);
 	p->AddHeader(tHeader);
 
 	if(protocol == (uint8_t) 17)
@@ -928,7 +972,7 @@ Ptr<Ipv4Route> RoutingProtocol::RouteOutput(Ptr<Packet> p,
 	}
 	if (m_socketAddresses.empty()) {
 		sockerr = Socket::ERROR_NOROUTETOHOST;
-		NS_LOG_LOGIC("No gpsr interfaces");
+		NS_LOG_LOGIC("No agra interfaces");
 		Ptr<Ipv4Route> route;
 		return route;
 	}
@@ -962,15 +1006,15 @@ Ptr<Ipv4Route> RoutingProtocol::RouteOutput(Ptr<Packet> p,
 
 	if (m_neighbors.isNeighbour(dst)) {
 		nextHop = dst;
-	} else if (RepulsionMode) {
-//		std::cout << "We start at Repulsion Mode!" << "[node "
-//				<< m_ipv4->GetObject<Node>()->GetId() << "] ttl="
-//				<< (uint32_t) header.GetTtl() << std::endl;
-		nextHop = m_neighbors.ElectrostaticBestNeighbor(dstPos, myPos);
+	} else if (false) {
+		std::cout << "We start at Repulsion Mode!" << "[node "
+				<< m_ipv4->GetObject<Node>()->GetId() << "] ttl="
+				<< (uint32_t) header.GetTtl() << std::endl;
+		nextHop = m_neighbors.ElectrostaticBestNeighbor(dstPos, myPos,locationX,locationY,object_radius);
 	} else {
-//		std::cout << "We start at Greedy Forwarding!" << "[node "
-//				<< m_ipv4->GetObject<Node>()->GetId() << "] ttl="
-//				<< (uint32_t) header.GetTtl() << std::endl;
+		//std::cout << "We start at Greedy Forwarding!" << "[node "
+		//		<< m_ipv4->GetObject<Node>()->GetId() << "] ttl="
+		//		<< (uint32_t) header.GetTtl() << std::endl;
 		nextHop = m_neighbors.BestNeighbor(dstPos, myPos);
 	}
 

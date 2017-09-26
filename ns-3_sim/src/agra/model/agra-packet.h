@@ -1,7 +1,29 @@
 /* -*- Mode:C++; c-file-style:"gnu"; indent-tabs-mode:nil; -*- */
-
-#ifndef GPSRPACKET_H
-#define GPSRPACKET_H
+/****************************************************************************/
+/* This file is part of AGRA project.                                       */
+/*                                                                          */
+/* AGRA is free software: you can redistribute it and/or modify             */
+/* it under the terms of the GNU General Public License as published by     */
+/* the Free Software Foundation, either version 3 of the License, or        */
+/* (at your option) any later version.                                      */
+/*                                                                          */
+/* AGRA is distributed in the hope that it will be useful,                  */
+/* but WITHOUT ANY WARRANTY; without even the implied warranty of           */
+/* MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the            */
+/* GNU General Public License for more details.                             */
+/*                                                                          */
+/* You should have received a copy of the GNU General Public License        */
+/* along with AGRA.  If not, see <http://www.gnu.org/licenses/>.            */
+/*                                                                          */
+/****************************************************************************/
+/*                                                                          */
+/*  Author:    Dmitrii Chemodanov, University of Missouri-Columbia          */
+/*  Title:     AGRA: AI-augmented Geographic Routing Approach for IoT-based */
+/*             Incident-Supporting Applications                             */
+/*  Revision:  1.0         6/19/2017                                        */
+/****************************************************************************/
+#ifndef AGRAPACKET_H
+#define AGRAPACKET_H
 
 #include <iostream>
 #include "ns3/header.h"
@@ -12,25 +34,25 @@
 #include "ns3/vector.h"
 
 namespace ns3 {
-namespace gpsr {
+namespace agra {
 
 
 
 enum MessageType
 {
-  GPSRTYPE_HELLO  = 1,         //!< GPSRTYPE_HELLO
-  GPSRTYPE_POS = 2,            //!< GPSRTYPE_POS
+  AGRATYPE_HELLO  = 1,         //!< AGRATYPE_HELLO
+  AGRATYPE_POS = 2,            //!< AGRATYPE_POS
 };
 
 /**
- * \ingroup gpsr
- * \brief GPSR types
+ * \ingroup agra
+ * \brief AGRA types
  */
 class TypeHeader : public Header
 {
 public:
   /// c-tor
-  TypeHeader (MessageType t = GPSRTYPE_HELLO);
+  TypeHeader (MessageType t);
 
   ///\name Header serialization/deserialization
   //\{
@@ -192,7 +214,7 @@ public:
   bool operator== (PositionHeader const & o) const;
 private:
   uint64_t         m_dstPosx;          ///< Destination Position x
-  uint64_t         m_dstPosy;          ///< Destination Position y
+  uint64_t         m_dstPosy;          ///< Destination Position x
   uint32_t         m_updated;          ///< Time of last update
   uint64_t         m_recPosx;          ///< x of position that entered Recovery-mode
   uint64_t         m_recPosy;          ///< y of position that entered Recovery-mode
@@ -208,4 +230,4 @@ std::ostream & operator<< (std::ostream & os, PositionHeader const &);
 
 }
 }
-#endif /* GPSRPACKET_H */
+#endif /* AGRAPACKET_H */

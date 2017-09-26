@@ -1,28 +1,18 @@
 /* -*- Mode:C++; c-file-style:"gnu"; indent-tabs-mode:nil; -*- */
-/****************************************************************************/
-/* This file is part of AGRA project.                                       */
-/*                                                                          */
-/* AGRA is free software: you can redistribute it and/or modify             */
-/* it under the terms of the GNU General Public License as published by     */
-/* the Free Software Foundation, either version 3 of the License, or        */
-/* (at your option) any later version.                                      */
-/*                                                                          */
-/* AGRA is distributed in the hope that it will be useful,                  */
-/* but WITHOUT ANY WARRANTY; without even the implied warranty of           */
-/* MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the            */
-/* GNU General Public License for more details.                             */
-/*                                                                          */
-/* You should have received a copy of the GNU General Public License        */
-/* along with AGRA.  If not, see <http://www.gnu.org/licenses/>.            */
-/*                                                                          */
-/****************************************************************************/
-/*                                                                          */
-/*  Author:    Dmitrii Chemodanov, University of Missouri-Columbia          */
-/*  Title:     AGRA: AI-augmented Geographic Routing Approach for IoT-based */
-/*             Incident-Supporting Applications                             */
-/*  Revision:  1.0         6/19/2017                                        */
-/****************************************************************************/
-
+/*
+ * This program is free software; you can redistribute it and/or modify
+ * it under the terms of the GNU General Public License version 2 as
+ * published by the Free Software Foundation;
+ *
+ * This program is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ * GNU General Public License for more details.
+ *
+ * You should have received a copy of the GNU General Public License
+ * along with this program; if not, write to the Free Software
+ * Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
+ */
 
 #include "ns3/core-module.h"
 #include "ns3/network-module.h"
@@ -31,16 +21,21 @@
 #include "ns3/mobility-module.h"
 #include "ns3/wifi-module.h"
 #include "ns3/olsr-module.h"
+#include "ns3/energy-module.h"
 #include "ns3/flow-monitor-module.h"
+#include "ns3/device-energy-model.h"
 #include "ns3/mobility-module.h"
 #include "ns3/agra-module.h"
 #include "ns3/aodv-module.h"
+#include "ns3/mesh-helper.h"
+#include "ns3/v4ping-helper.h"
 #include "ns3/random-variable-stream.h"
 #include <fstream>
 
+
 //#include "myapp.h"
 
-NS_LOG_COMPONENT_DEFINE ("MyExpr");
+NS_LOG_COMPONENT_DEFINE ("MyExpr2");
 
 using namespace ns3;
 
@@ -153,50 +148,9 @@ MyApp::ScheduleTx (void)
 {
   if (m_running)
     {
-      Time tNext (Seconds (m_packetSize * 8 / static_cast<double> (m_dataRate.GetBitRate ())));
+      Time tNext (Seconds(m_packetSize * 8 / static_cast<double> (m_dataRate.GetBitRate ())));
       m_sendEvent = Simulator::Schedule (tNext, &MyApp::SendPacket, this);
     }
-}
-
-static void
-SetNodePos(Ptr<Node> node, Vector pos)
-{
-	Ptr<MobilityModel> mobility = node->GetObject<MobilityModel> ();
-	mobility->SetPosition(pos);
-}
-
-static void
-SetNodeFailure (Ptr<Node> node, Time FailureTime)
-{
-  Ptr<MobilityModel> mobility = node->GetObject<MobilityModel> ();
-  Vector oldPos = mobility->GetPosition();
-  Vector failurePos (10000,0,0); //to simulate failure move node out of its neighbors range
-
-  Simulator::Schedule (Simulator::Now(), &SetNodePos, node, failurePos);
-  Simulator::Schedule (Simulator::Now() + FailureTime - Seconds(0.1), &SetNodePos,node, oldPos);
-}
-
-static void
-DecideOnNodesFailure (NodeContainer nodes, Time FailureTime, double FailureProb, Time StopTime)
-{
-	Ptr<UniformRandomVariable> rvar = CreateObject<UniformRandomVariable>();
-	NodeContainer::Iterator i;
-    for (i = nodes.Begin(); !(i == nodes.End()); i++) {
-		if (rvar->GetValue (0, 1) < FailureProb)
-		{
-			SetNodeFailure(*i, FailureTime);
-			std::cout<< Simulator::Now ().GetSeconds () <<" sec, Node["<<(*i)->GetId()<<"] failed!"<<std::endl;
-		}
-	}
-
-   	Simulator::Schedule (FailureTime, &DecideOnNodesFailure, nodes, FailureTime, FailureProb, StopTime);
-}
-
-static void
-CourseChange (std::string foo, Ptr<const MobilityModel> mobility)
-{
-  Vector pos = mobility->GetPosition ();
-  std::cout << Simulator::Now ().GetSeconds () << ", Paramedic has changed location -> POS: (" << pos.x << ", " << pos.y << ")." << std::endl;
 }
 
 static void
@@ -207,10 +161,49 @@ CwndChange (Ptr<OutputStreamWrapper> stream, uint32_t oldCwnd, uint32_t newCwnd)
 }
 
 static void
-RxDrop (Ptr<OutputStreamWrapper> stream, Ptr<const Packet> p)
+CourseChange (std::string foo, Ptr<const MobilityModel> mobility)
 {
-  //NS_LOG_UNCOND ("RxDrop at " << Simulator::Now ().GetSeconds ());
-  *stream->GetStream () << "Rx drop at: "<< Simulator::Now ().GetSeconds () << std::endl;
+  Vector pos = mobility->GetPosition ();
+  std::cout << Simulator::Now ().GetSeconds () << ", Paramedic has changed location -> POS: (" << pos.x << ", " << pos.y << ")." << std::endl;
+}
+
+/* 
+  Calculate throughput obtain from simulation
+    sink : receiver nodes
+    oldCur : previous throughput obtained
+*/
+static void 
+SaveTh(Ptr<PacketSink> sink, Ptr<OutputStreamWrapper> stream, double oldCur)
+{
+  Time now = Simulator::Now (); /* Return the simulator's virtual time. */
+  //std::cout<<"Prev bytes"
+  double cur = (sink->GetTotalRx() - oldCur) * (double) 8/ 1000000;
+  *stream->GetStream () << cur << std::endl;
+  Simulator::Schedule(Seconds(1.0), &SaveTh, sink, stream, sink->GetTotalRx());
+}
+
+/* 
+  Instatiate infinite travel of vehicle where 
+     vehicle : all mobility nodes in scene
+     carSpeed : velocity of mobility node
+  When traveling vehicle is hitting border, it will move to the beginning point 
+*/
+static void 
+CheckBound(NodeContainer vehicle, double carSpeed){
+    for(uint16_t i=0;i<vehicle.GetN();i++)
+    {
+            Ptr<ConstantVelocityMobilityModel> mob = vehicle.Get(i)->GetObject<ConstantVelocityMobilityModel>();
+            Vector m_position = mob->GetPosition();
+            //Vector m_velocity = mob->GetVelocity();
+            if (m_position.x <= 0) 
+                {
+                   m_position.x += 600;
+                   //m_velocity.y = -10.0;
+                   mob->SetPosition(m_position);
+                }
+            mob->SetVelocity(Vector(-carSpeed, 0.0, 0.0));
+    }
+    
 }
 
 int main (int argc, char *argv[])
@@ -221,14 +214,14 @@ int main (int argc, char *argv[])
   std::string phyMode ("ErpOfdmRate54Mbps");
   uint16_t RepulsionMode = (uint16_t) 1;
   //Init the location and radius of obstacle
-  double locationX=375,locationY=325;
-  double object_radius=388.909;
+  double locationX=300,locationY=450;
+  double object_radius=200;
   Time FailureTime = Seconds(30.0);
   double FailureProb = 0.0;
-  Time StopTime = Seconds(780.0);
+  Time StopTime = Seconds(720.0);
   Time LocationTime = Seconds(180.0);
   double SrcSpeed = 2.8; //[m/s] speed of jogging
-
+  double carSpeed = 5; //20 //[m/s] speed of car running
 
   CommandLine cmd;
   cmd.AddValue ("EnableMonitor", "Enable Flow Monitor", enableFlowMonitor);
@@ -241,24 +234,31 @@ int main (int argc, char *argv[])
   cmd.AddValue ("SrcSpeed", "Speed of the paramedic who acts as a src between locations", SrcSpeed);
   cmd.Parse (argc, argv);
 
-//
-// Explicitly create the nodes required by the topology (shown above).
-//
+  //
+  // Explicitly create the nodes required by the topology (shown above).
+  //
   NS_LOG_INFO ("Create nodes.");
   NodeContainer c1; // sink and source
-  c1.Create(14);
+  c1.Create(8);
   NodeContainer c2;
-  c2.Create(14);
+  c2.Create(2);
   NodeContainer c3;
-  c3.Create(5);
+  c3.Create(7);
   NodeContainer c4;
-  c4.Create(5);
+  c4.Create(7);
+  NodeContainer c5;
+  c5.Create(1);
 
   NodeContainer allTransmissionNodes;
   allTransmissionNodes.Add(c1);
   allTransmissionNodes.Add(c2);
   allTransmissionNodes.Add(c3);
   allTransmissionNodes.Add(c4);
+  allTransmissionNodes.Add(c5);
+
+  NodeContainer vehicle;
+  vehicle.Create(6);
+  allTransmissionNodes.Add(vehicle);
 
   NodeContainer sinkSrc;
   sinkSrc.Create(2);
@@ -269,19 +269,15 @@ int main (int argc, char *argv[])
   c.Add(allTransmissionNodes);
 
 
-
   // Set up WiFi
   WifiHelper wifi;
-
   YansWifiPhyHelper wifiPhy =  YansWifiPhyHelper::Default ();
   wifiPhy.SetPcapDataLinkType (YansWifiPhyHelper::DLT_IEEE802_11);
-
   YansWifiChannelHelper wifiChannel ;
   wifiChannel.SetPropagationDelay ("ns3::ConstantSpeedPropagationDelayModel");
   wifiChannel.AddPropagationLoss ("ns3::TwoRayGroundPropagationLossModel",
-	  	  	  	  	  	  	  	    "SystemLoss", DoubleValue(1),
-		  	  	  	  	  	  	    "HeightAboveZ", DoubleValue(1.5));
-
+	  	  	  		  	  	  	    "SystemLoss", DoubleValue(1),
+                                    "HeightAboveZ", DoubleValue(1.5));
   // For range near 250m
   wifiPhy.Set ("TxPowerStart", DoubleValue(20));
   wifiPhy.Set ("TxPowerEnd", DoubleValue(20));
@@ -292,57 +288,43 @@ int main (int argc, char *argv[])
   wifiPhy.Set ("CcaMode1Threshold", DoubleValue(-71.8));//-67.5));
 
   wifiPhy.SetChannel (wifiChannel.Create ());
+  NetDeviceContainer devices;
 
+  //for all cases except HWMP uncomment below ============================================
   // Add a non-QoS upper mac
   NqosWifiMacHelper wifiMac = NqosWifiMacHelper::Default ();
   wifiMac.SetType ("ns3::AdhocWifiMac");
 
   // Set 802.11g standard
   wifi.SetStandard (WIFI_PHY_STANDARD_80211g);
-
   wifi.SetRemoteStationManager ("ns3::ConstantRateWifiManager",
                                 "DataMode",StringValue(phyMode),
                                 "ControlMode",StringValue(phyMode));
-
-
-  NetDeviceContainer devices;
   devices = wifi.Install (wifiPhy, wifiMac, c);
+  //============================================
 
+  //for HWMP uncomment below ============================================
+  //       std::string root = "ff:ff:ff:ff:ff:ff";
+  //       MeshHelper mesh = MeshHelper::Default(); 
+  //       mesh.SetRemoteStationManager ("ns3::ConstantRateWifiManager");//,
+  //       mesh.SetStackInstaller ("ns3::Dot11sStack"); 
+  //       mesh.SetSpreadInterfaceChannels (MeshHelper::SPREAD_CHANNELS); 
+  //      mesh.SetNumberOfInterfaces (1);
+  //       devices = mesh.Install (wifiPhy, c);
+  //============================================
 
-  //setup routing protocol
+  // setup routing protocol section ==========================================
   AgraHelper agra;
   agra.Set("RepulsionMode",UintegerValue(RepulsionMode));
   agra.Set("locationX",DoubleValue(locationX));
   agra.Set("locationY",DoubleValue(locationY));
   agra.Set("object_radius",DoubleValue(object_radius));
-
-  // Enable OLSR
-  OlsrHelper olsr;
-  Ipv4StaticRoutingHelper staticRouting;
-
-  Ipv4ListRoutingHelper list;
-  list.Add (staticRouting, 0);
-  list.Add (olsr, 10);
-
   AodvHelper aodv;
-  /* 2. Setup TCP/IP & AODV
-    AodvHelper aodv; // Use default parameters here
-     InternetStackHelper internetStack;
-    internetStack.SetRoutingHelper (aodv);
-    internetStack.Install (*m_nodes);
-    streamsUsed += internetStack.AssignStreams (*m_nodes, streamsUsed);
-    // InternetStack uses m_size more streams
-    NS_TEST_ASSERT_MSG_EQ (streamsUsed, (devices.GetN () * 8) + m_size, "Stream assignment mismatch");
-    streamsUsed += aodv.AssignStreams (*m_nodes, streamsUsed);
-    // AODV uses m_size more streams
-    NS_TEST_ASSERT_MSG_EQ (streamsUsed, ((devices.GetN () * 8) + (2*m_size)), "Stream assignment mismatch");
-*/
-
   InternetStackHelper internet;
-  internet.SetRoutingHelper (agra);
-  //internet.SetRoutingHelper (list);
-  //internet.SetRoutingHelper (aodv); // has effect on the next Install ()
+  internet.SetRoutingHelper (agra); //uncomment to use agra or egf
+  //internet.SetRoutingHelper (aodv); //uncomment to use aodv
   internet.Install (c);
+  //============================================
 
   // Set up Addresses
   Ipv4AddressHelper ipv4;
@@ -350,11 +332,18 @@ int main (int argc, char *argv[])
   ipv4.SetBase ("10.1.1.0", "255.255.255.0");
   Ipv4InterfaceContainer ifcont = ipv4.Assign (devices);
 
-// Set Mobility for all nodes
+  // Set Mobility for all nodes
+  /*
+  Choose location for mobility node with 
+  GridWidth : number of element on a row
+  MinX,MinY : location based
+  DeltaX, DeltaY: the distant between 2 nodes
+  LayoutType: Row-wise model
+  */
   MobilityHelper mobility1;
   mobility1.SetPositionAllocator ("ns3::GridPositionAllocator",
-                                 "MinX", DoubleValue (50.0),
-                                 "MinY", DoubleValue (0.0),
+                                 "MinX", DoubleValue (100.0),
+                                 "MinY", DoubleValue (300.0),
                                  "DeltaX", DoubleValue (50),
                                  "DeltaY", DoubleValue (50),
                                  "GridWidth", UintegerValue (1),
@@ -364,8 +353,8 @@ int main (int argc, char *argv[])
 
   MobilityHelper mobility2;
   mobility2.SetPositionAllocator ("ns3::GridPositionAllocator",
-                                 "MinX", DoubleValue (350.0),
-                                 "MinY", DoubleValue (0.0),
+                                 "MinX", DoubleValue (400.0),
+                                 "MinY", DoubleValue (300.0),
                                  "DeltaX", DoubleValue (50),
                                  "DeltaY", DoubleValue (50),
                                  "GridWidth", UintegerValue (1),
@@ -375,51 +364,83 @@ int main (int argc, char *argv[])
 
   MobilityHelper mobility3;
   mobility3.SetPositionAllocator ("ns3::GridPositionAllocator",
-                                 "MinX", DoubleValue (100.0),
-                                 "MinY", DoubleValue (0.0),
+                                 "MinX", DoubleValue (500.0),
+                                 "MinY", DoubleValue (350.0),
                                  "DeltaX", DoubleValue (50),
                                  "DeltaY", DoubleValue (50),
-                                 "GridWidth", UintegerValue (5),
+                                 "GridWidth", UintegerValue (1),
                                  "LayoutType", StringValue ("RowFirst"));
   mobility3.SetMobilityModel("ns3::ConstantPositionMobilityModel");
   mobility3.Install(c3);
 
   MobilityHelper mobility4;
   mobility4.SetPositionAllocator ("ns3::GridPositionAllocator",
-                                 "MinX", DoubleValue (100.0),
+                                 "MinX", DoubleValue (150.0),
                                  "MinY", DoubleValue (650.0),
                                  "DeltaX", DoubleValue (50),
                                  "DeltaY", DoubleValue (50),
-                                 "GridWidth", UintegerValue (5),
+                                 "GridWidth", UintegerValue (7),
                                  "LayoutType", StringValue ("RowFirst"));
   mobility4.SetMobilityModel("ns3::ConstantPositionMobilityModel");
   mobility4.Install(c4);
 
-  //sink is static and represents adhoc metwork edge, e.g., internet gateway
+  MobilityHelper mobility5;
+  mobility5.SetPositionAllocator ("ns3::GridPositionAllocator",
+                                 "MinX", DoubleValue (450.0),
+                                 "MinY", DoubleValue (350.0),
+                                 "DeltaX", DoubleValue (50),
+                                 "DeltaY", DoubleValue (50),
+                                 "GridWidth", UintegerValue (5),
+                                 "LayoutType", StringValue ("RowFirst"));
+  mobility5.SetMobilityModel("ns3::ConstantPositionMobilityModel");
+  mobility5.Install(c5);
+
+  // Set original locations for moving objects (vehicles)	
+  MobilityHelper stationMobilityHelper;
+  Ptr<ListPositionAllocator> stationPositionAlloc = CreateObject<ListPositionAllocator>();
+  stationPositionAlloc -> Add(Vector(550.0, 150.0, 0.0));
+  stationPositionAlloc -> Add(Vector(450.0, 150.0, 0.0));
+  stationPositionAlloc -> Add(Vector(350.0, 150.0, 0.0));
+  stationPositionAlloc -> Add(Vector(250.0, 150.0, 0.0));
+  stationPositionAlloc -> Add(Vector(150.0, 150.0, 0.0));
+  stationPositionAlloc -> Add(Vector(50.0 , 150.0, 0.0));
+  stationMobilityHelper.SetPositionAllocator(stationPositionAlloc);
+  stationMobilityHelper.SetMobilityModel("ns3::ConstantVelocityMobilityModel");
+  stationMobilityHelper.Install(vehicle);
+  
+  // Start moving vehicle in simulation 
+  for(uint32_t i=0;i<vehicle.GetN();i++){
+    (vehicle.Get(i) -> GetObject<ConstantVelocityMobilityModel>()) -> SetVelocity(Vector(-carSpeed, 0.0, 0.0));
+  }
+  for (uint n=0 ; n < 720 ; n++)
+  {
+    Simulator::Schedule(Seconds(n), &CheckBound, vehicle, carSpeed);
+  }        
+
+  //sink is static and represents adhoc network edge, e.g., internet gateway
   MobilityHelper mobility;
   Ptr<ListPositionAllocator> positionAlloc = CreateObject <ListPositionAllocator>();
-//  positionAlloc ->Add(Vector(0, 325, 0)); // source
-  positionAlloc ->Add(Vector(400, 325, 0)); // sink
+  positionAlloc ->Add(Vector(0, 650, 0)); // sink
   mobility.SetPositionAllocator(positionAlloc);
   mobility.SetMobilityModel("ns3::ConstantPositionMobilityModel");
   mobility.Install(sinkSrc.Get(1));
 
   //paramedic acts as a src and moves from location 1 to location 3 through location 2.
 
-   MobilityHelper mobilitySrc;
+  MobilityHelper mobilitySrc;
   Ptr<ListPositionAllocator> positionAllocSrc = CreateObject <ListPositionAllocator>();
-  positionAllocSrc ->Add(Vector(0, 0, 0)); // source
+  positionAllocSrc ->Add(Vector(100, 0, 0)); // source
   mobilitySrc.SetPositionAllocator(positionAllocSrc);
   mobilitySrc.SetMobilityModel ("ns3::WaypointMobilityModel",
                                "InitialPositionIsWaypoint", BooleanValue (true));
   mobilitySrc.Install(sinkSrc.Get(0));
 
-  Waypoint location1 (LocationTime, Vector(0,0,0));
-  Time nextWaypointTime = LocationTime + Seconds(325/SrcSpeed);
-  Waypoint location21 (nextWaypointTime, Vector(0,325,0));
-  Waypoint location22 (nextWaypointTime + LocationTime, Vector(0,325,0));
-  Time lastWaypointTime = nextWaypointTime + LocationTime + Seconds(325/SrcSpeed);
-  Waypoint location3 (lastWaypointTime, Vector(0,650,0));
+  Waypoint location1 (LocationTime, Vector(100, 0, 0));
+  Time nextWaypointTime = LocationTime + Seconds(250/SrcSpeed);
+  Waypoint location21 (nextWaypointTime, Vector(350,0,0));
+  Waypoint location22 (nextWaypointTime + LocationTime, Vector(350,0,0));
+  Time lastWaypointTime = nextWaypointTime + LocationTime + Seconds(250/SrcSpeed);
+  Waypoint location3 (lastWaypointTime, Vector(600,0,0));
 
   //Add waypoints to the src
   Ptr<WaypointMobilityModel> srcModel = sinkSrc.Get(0)->GetObject<WaypointMobilityModel> ();
@@ -438,7 +459,7 @@ int main (int argc, char *argv[])
   Address sinkAddress (InetSocketAddress (ifcont.GetAddress (1), sinkPort));
   PacketSinkHelper packetSinkHelper ("ns3::TcpSocketFactory", InetSocketAddress (Ipv4Address::GetAny (), sinkPort));
   ApplicationContainer sinkApps = packetSinkHelper.Install (sinkSrc.Get (1));
-  sinkApps.Start (Seconds (0.0));
+  sinkApps.Start (Seconds (1.9));//1.9
   sinkApps.Stop (StopTime);
 
   Ptr<Socket> ns3TcpSocket = Socket::CreateSocket (sinkSrc.Get (0), TcpSocketFactory::GetTypeId ());
@@ -447,43 +468,40 @@ int main (int argc, char *argv[])
   Ptr<MyApp> app = CreateObject<MyApp> ();
   app->Setup (ns3TcpSocket, sinkAddress, 1448, DataRate ("5Mbps"));
   sinkSrc.Get (0)->AddApplication (app);
-  app->SetStartTime (Seconds (1.0));
+  app->SetStartTime (Seconds (2));//2
   app->SetStopTime (StopTime);
 
   AsciiTraceHelper asciiTraceHelper;
-  Ptr<OutputStreamWrapper> stream = asciiTraceHelper.CreateFileStream ("cwnd_mobicom_expr.txt");
+  Ptr<OutputStreamWrapper> stream = asciiTraceHelper.CreateFileStream ("cwnd_mobicom_expr2.txt");
   ns3TcpSocket->TraceConnectWithoutContext ("CongestionWindow", MakeBoundCallback (&CwndChange, stream));
+ 
+  Ptr<PacketSink> sink = StaticCast<PacketSink> (sinkApps.Get(0));
+  double oldCur = sink -> GetTotalRx();
+  Ptr<OutputStreamWrapper> stream1 = asciiTraceHelper.CreateFileStream ("thr_mobicom_expr2.txt");
+  Simulator::Schedule(Seconds(2.0), &SaveTh, sink, stream1, oldCur);
 
-
-  Ptr<OutputStreamWrapper> stream2 = asciiTraceHelper.CreateFileStream ("pdrop_mobicom_expr.txt");
-  devices.Get (1)->TraceConnectWithoutContext ("PhyRxDrop", MakeBoundCallback (&RxDrop, stream2));
-  //devices.Get (1)->TraceConnectWithoutContext ("PhyRxDrop", MakeCallback (&RxDrop));
-
-  /*
+/*
   V4PingHelper ping (ifcont.GetAddress (1));
   ping.SetAttribute ("Verbose", BooleanValue (true));
 
   ApplicationContainer p = ping.Install (sinkSrc.Get (0));
   p.Start (Seconds (5));
   p.Stop (StopTime - Seconds (0.001));
-*/
-  std::cout <<"src ip="<<ifcont.GetAddress (0, 0)<<" id="<<sinkSrc.Get (0)->GetId() <<"; sink ip="<<ifcont.GetAddress(1, 0)<<" id="<<sinkSrc.Get (1)->GetId() <<std::endl;
 
+  std::cout <<"src ip="<<ifcont.GetAddress (0, 0)<<" id="<<sinkSrc.Get (0)->GetId() <<"; sink ip="<<ifcont.GetAddress(1, 0)<<" id="<<sinkSrc.Get (1)->GetId() <<std::endl;
+*/
 
   //log only src movements
-  Config::Connect ("/NodeList/38/$ns3::MobilityModel/CourseChange",
+  Config::Connect ("/NodeList/31/$ns3::MobilityModel/CourseChange",
                      MakeCallback (&CourseChange));
 
-// Trace devices (pcap)
-//  wifiPhy.EnablePcap ("mobicom_expr", devices.Get(0)); //save pcap file for src
-wifiPhy.EnablePcap ("mobicom_expr", devices.Get(1)); //save pcap file for sink
+  // Trace devices (pcap)
+  // wifiPhy.EnablePcap ("mobicom_expr2", devices.Get(0)); //save pcap file for src
+  wifiPhy.EnablePcap ("mobicom_expr2", devices.Get(1)); //save pcap file for sink
+  // wifiPhy.EnablePcapAll ("mobicom_expr2");
 
-
-
-// Now, do the actual simulation.
+  // Now, do the actual simulation.
   NS_LOG_INFO ("Run Simulation.");
-
-  DecideOnNodesFailure (allTransmissionNodes, FailureTime, FailureProb, StopTime); // simulate node failures by moving them far from others
 
   Simulator::Stop (StopTime);
   Simulator::Run ();

@@ -1,21 +1,44 @@
-#include "gpsr-ptable.h"
+/****************************************************************************/
+/* This file is part of AGRA project.                                       */
+/*                                                                          */
+/* AGRA is free software: you can redistribute it and/or modify             */
+/* it under the terms of the GNU General Public License as published by     */
+/* the Free Software Foundation, either version 3 of the License, or        */
+/* (at your option) any later version.                                      */
+/*                                                                          */
+/* AGRA is distributed in the hope that it will be useful,                  */
+/* but WITHOUT ANY WARRANTY; without even the implied warranty of           */
+/* MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the            */
+/* GNU General Public License for more details.                             */
+/*                                                                          */
+/* You should have received a copy of the GNU General Public License        */
+/* along with AGRA.  If not, see <http://www.gnu.org/licenses/>.            */
+/*                                                                          */
+/****************************************************************************/
+/*                                                                          */
+/*  Author:    Dmitrii Chemodanov, University of Missouri-Columbia          */
+/*  Title:     AGRA: AI-augmented Geographic Routing Approach for IoT-based */
+/*             Incident-Supporting Applications                             */
+/*  Revision:  1.0         6/19/2017                                        */
+/****************************************************************************/
+#include "agra-ptable.h"
 #include "ns3/simulator.h"
 #include "ns3/log.h"
 #include <algorithm>
 #include <cfloat>
 
-NS_LOG_COMPONENT_DEFINE ("GpsrTable");
+NS_LOG_COMPONENT_DEFINE ("AgraTable");
 
 namespace ns3 {
-namespace gpsr {
+namespace agra {
 
 /*
- GPSR position table
+ AGRA position table
  */
 
 PositionTable::PositionTable() {
 	m_txErrorCallback = MakeCallback(&PositionTable::ProcessTxError, this);
-	m_entryLifeTime = Seconds(2); //FIXME fazer isto parametrizavel de acordo com tempo de hello
+	m_entryLifeTime = Seconds(0.6); //2.25 for 5 m/s and 0.6 for 20 m/s //FIXME fazer isto parametrizavel de acordo com tempo de hello
 
 }
 
@@ -23,8 +46,7 @@ Time PositionTable::GetEntryUpdateTime(Ipv4Address id) {
 	if (id == Ipv4Address::GetZero()) {
 		return Time(Seconds(0));
 	}
-	std::map<Ipv4Address, std::pair<Vector, Time> >::iterator i = m_table.find(
-			id);
+	std::map<Ipv4Address, std::pair<Vector, Time> >::iterator i = m_table.find(id);
 	return i->second.second;
 }
 
@@ -150,7 +172,7 @@ void PositionTable::PrintNeighbors(std::ostream &os) {
 }
 
 /**
- * \brief Gets next hop according to GPSR protocol
+ * \brief Gets next hop according to AGRA protocol
  * \param position the position of the destination node
  * \param nodePos the position of the node that has the packet
  * \return Ipv4Address of the next hop, Ipv4Address::GetZero () if no nighbour was found in greedy mode
@@ -189,16 +211,15 @@ Ipv4Address PositionTable::BestNeighbor(Vector position, Vector nodePos) {
  * \param nodePos the position of the node that has the packet
  * \return Ipv4Address of the next hop, Ipv4Address::GetZero () if no nighbour was found in Repulsion mode
  */
-Ipv4Address PositionTable::ElectrostaticBestNeighbor(Vector position,
-		Vector nodePos) {
+Ipv4Address PositionTable::ElectrostaticBestNeighbor(Vector position, Vector nodePos, 
+		double locationX, double locationY, double radius) {
 	Purge();
-
 	//FIXME allow parametrization of this parameters
 	double q = 1;
 	double n = 2;
 	//FIXME add hole detection mechanism
-	Vector holeC(200,325,0);//(375, 325, 0); // be aware these values are hardcoded for particular experiment
-	double holeR = 350;//388.909; // be aware these values are hardcoded for particular experiment
+	Vector holeC(locationX,locationY,0);//(300,450,0);//(375, 325, 0); // be aware these values are hardcoded for particular experiment
+	double holeR = std::sqrt(2)*200;//388.909; // be aware these values are hardcoded for particular experiment
 
 	//calculate hole charge ql
 	double b = CalculateDistance(holeC, position);
@@ -206,6 +227,11 @@ Ipv4Address PositionTable::ElectrostaticBestNeighbor(Vector position,
 
 	double initPotential = -q / CalculateDistance(nodePos, position)
 			+ ql / (std::pow(CalculateDistance(nodePos, holeC), n));
+
+if ((position.x == 0 && position.y == 6500) || (position.x == 6000 && position.y == 0))
+{
+	std::cout << "Current node potential=" << initPotential << " dst pos=["<< position.x <<","<< position.y <<"]" << std::endl;
+}
 
 	if (m_table.empty()) {
 		NS_LOG_DEBUG("BestNeighbor table is empty; Position: " << position);
@@ -220,7 +246,18 @@ Ipv4Address PositionTable::ElectrostaticBestNeighbor(Vector position,
 	for (i = m_table.begin(); !(i == m_table.end()); i++) {
 		double tmpPotential = -q / CalculateDistance(i->second.first, position)
 				+ ql / (std::pow(CalculateDistance(i->second.first, holeC), n));
+		if ((position.x == 0 && position.y == 6500) || (position.x == 6000 && position.y == 0))
+		{		
+			std::cout << "Neighbor " << "[node " << i->first << "]"
+			<<" potential=" << tmpPotential << std::endl;
+		}
 		if (minPotential > tmpPotential) {
+			if ((position.x == 0 && position.y == 6500) || (position.x == 6000 && position.y == 0))
+			{		
+				std::cout << "Prev. Best Neighbor " << "[node " << i->first << "]"
+				<<" potential=" << minPotential << std::endl;
+			}
+
 			bestFoundID = i->first;
 			minPotential = tmpPotential;
 		}
@@ -229,11 +266,27 @@ Ipv4Address PositionTable::ElectrostaticBestNeighbor(Vector position,
 	if (initPotential > minPotential)
 		return bestFoundID;
 	else
+	{
+		if ((position.x == 0 && position.y == 6500) || (position.x == 6000 && position.y == 0))
+		{	
+			std::cout << "Current node potential=" << initPotential << " dst pos=["
+			<< position.x <<","<< position.y <<"]" << std::endl;	
+			std::cout << "New Best Neighbor " << "[node " << bestFoundID << "]"
+			<<" potential=" << minPotential << std::endl;
+			for (i = m_table.begin(); !(i == m_table.end()); i++) {
+				double tmpPotential = -q / CalculateDistance(i->second.first, position)
+					+ ql / (std::pow(CalculateDistance(i->second.first, holeC), n));			
+				std::cout << "Neighbor " << "[node " << i->first << "]"
+				<<" potential=" << tmpPotential << std::endl;		
+			}
+			
+		}
 		return Ipv4Address::GetZero(); //so it enters Recovery-mode
+	}
 }
 
 /**
- * \brief Gets next hop according to GPSR recovery-mode protocol (right hand rule)
+ * \brief Gets next hop according to AGRA recovery-mode protocol (right hand rule)
  * \param previousHop the position of the node that sent the packet to this node
  * \param nodePos the position of the destination node
  * \return Ipv4Address of the next hop, Ipv4Address::GetZero () if no nighbour was found in greedy mode
@@ -358,5 +411,5 @@ void PositionTable::PlanarizeNeighbors(Vector nodePos) {
 	}
 }
 
-}   // gpsr
+}   // agra
 } // ns3

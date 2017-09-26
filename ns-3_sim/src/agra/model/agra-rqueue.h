@@ -1,7 +1,29 @@
 /* -*- Mode:C++; c-file-style:"gnu"; indent-tabs-mode:nil; -*- */
-
-#ifndef GPSR_RQUEUE_H
-#define GPSR_RQUEUE_H
+/****************************************************************************/
+/* This file is part of AGRA project.                                       */
+/*                                                                          */
+/* AGRA is free software: you can redistribute it and/or modify             */
+/* it under the terms of the GNU General Public License as published by     */
+/* the Free Software Foundation, either version 3 of the License, or        */
+/* (at your option) any later version.                                      */
+/*                                                                          */
+/* AGRA is distributed in the hope that it will be useful,                  */
+/* but WITHOUT ANY WARRANTY; without even the implied warranty of           */
+/* MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the            */
+/* GNU General Public License for more details.                             */
+/*                                                                          */
+/* You should have received a copy of the GNU General Public License        */
+/* along with AGRA.  If not, see <http://www.gnu.org/licenses/>.            */
+/*                                                                          */
+/****************************************************************************/
+/*                                                                          */
+/*  Author:    Dmitrii Chemodanov, University of Missouri-Columbia          */
+/*  Title:     AGRA: AI-augmented Geographic Routing Approach for IoT-based */
+/*             Incident-Supporting Applications                             */
+/*  Revision:  1.0         6/19/2017                                        */
+/****************************************************************************/
+#ifndef AGRA_RQUEUE_H
+#define AGRA_RQUEUE_H
 
 #include <vector>
 #include "ns3/ipv4-routing-protocol.h"
@@ -9,11 +31,11 @@
 
 
 namespace ns3 {
-namespace gpsr {
+namespace agra {
 
 /**
- * \ingroup gpsr
- * \brief GPSR Queue Entry
+ * \ingroup agra
+ * \brief AGRA Queue Entry
  */
 class QueueEntry
 {
@@ -96,10 +118,10 @@ private:
   Time m_expire;
 };
 /**
- * \ingroup gpsr
- * \brief GPSR route request queue
+ * \ingroup agra
+ * \brief AGRA route request queue
  *
- * Since GPSR is an on demand routing we queue requests while looking for route.
+ * Since AGRA is an on demand routing we queue requests while looking for route.
  */
 class RequestQueue
 {
@@ -160,4 +182,4 @@ private:
 }
 }
 
-#endif /* GPSR_RQUEUE_H */
+#endif /* AGRA_RQUEUE_H */
